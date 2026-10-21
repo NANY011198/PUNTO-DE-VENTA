@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Punto de Venta - Cobrar</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <style>
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            #ticket-impresion, #ticket-impresion * {
+                visibility: visible;
+            }
+            #ticket-impresion {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                font-family: monospace;
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+<body class="bg-light">
+    <div class="container mt-4 d-print-none">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h2>Punto de Venta</h2>
+            <div>
+                <a href="/reporte" class="btn btn-info text-white">Ver Reportes</a>
+                <a href="/" class="btn btn-secondary">Ver Inventario</a>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- Formulario de Registro de Venta -->
+            <div class="col-md-6">
+                <div class="card p-3 shadow-sm mb-3">
+                    <h4>Registrar Venta</h4>
+                    <form action="/registrar_venta" method="POST">
+                        <div class="mb-3">
+                            <label class="form-label">Seleccionar Producto</label>
+                            <select name="producto_id" class="form-select" required>
+                                {% for p in productos %}
+                                    <option value="{{ p.id }}">{{ p.nombre }} - ${{ p.precio }} (Disponible: {{ p.stock }})</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Cantidad</label>
+                            <input type="number" name="cantidad" class="form-control" value="1" min="1" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Forma de Pago</label>
+                            <select name="forma_pago" class="form-select" required>
+                                <option value="Efectivo">Efectivo</option>
+                                <option value="Tarjeta">Tarjeta de Crédito/Débito</option>
+                                <option value="Transferencia">Transferencia Bancaria</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100 fs-5">Completar Venta e Imprimir Ticket</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Tabla de Ventas Recientes -->
+            <div class="col-md-6">
+                <div class="card p-3 shadow-sm">
+                    <h4>Ventas del Día</h4>
+                    <table class="table table-sm table-striped">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Hora</th>
+                                <th>Producto</th>
+                                <th>Total</th>
+                                <th>Pago</th>
+                                <th>Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for v in ventas %}
+                            <tr>
+                                <td>{{ v.id }}</td>
+                                <td>{{ v.fecha.strftime('%H:%M:%S') }}</td>
+                                <td>{{ v.cantidad }}x {{ v.producto_nombre }}</td>
+                                <td>${{ "%.2f"|format(v.total) }}</td>
+                                <td><span class="badge bg-info text-dark">{{ v.forma_pago }}</span></td>
+                                <td>
+                                    <button onclick="imprimirTicket('{{ v.id }}', '{{ v.producto_nombre }}', '{{ v.cantidad }}', '{{ v.total }}', '{{ v.forma_pago }}', '{{ v.fecha.strftime('%d/%m/%Y %H:%M') }}')" class="btn btn-sm btn-outline-dark">🖨️ Ticket</button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Plantilla del Comprobante/Ticket -->
+    <div id="ticket-impresion" class="d-none d-print-block">
+        <div class="text-center">
+            <h5 class="m-0">MI TIENDA POS</h5>
+            <p class="m-0">Comprobante de Venta</p>
+            <p id="t-fecha" class="m-0"></p>
+            <p>----------------------------------------</p>
+        </div>
+        <p class="m-0"><strong>Venta #:</strong> <span id="t-id"></span></p>
+        <p class="m-0"><strong>Forma Pago:</strong> <span id="t-pago"></span></p>
+        <p>----------------------------------------</p>
+        <p class="m-0"><strong>Detalle:</strong></p>
+        <p class="m-0"><span id="t-cantidad"></span>x <span id="t-producto"></span></p>
+        <p>----------------------------------------</p>
+        <h4 class="text-end">TOTAL: $<span id="t-total"></span></h4>
+        <p>----------------------------------------</p>
+        <div class="text-center">
+            <p>¡Gracias por su compra!</p>
+        </div>
+    </div>
+
+    <script>
+        function imprimirTicket(id, producto, cantidad, total, pago, fecha) {
+            document.getElementById('t-id').innerText = id;
+            document.getElementById('t-producto').innerText = producto;
+            document.getElementById('t-cantidad').innerText = cantidad;
+            document.getElementById('t-total').innerText = parseFloat(total).toFixed(2);
+            document.getElementById('t-pago').innerText = pago;
+            document.getElementById('t-fecha').innerText = fecha;
+            window.print();
+        }
+    </script>
+</body>
+</html>
