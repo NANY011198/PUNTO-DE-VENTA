@@ -1,3 +1,4 @@
+
 import os
 from datetime import datetime
 from flask import Flask, render_template, request, jsonify
@@ -82,7 +83,7 @@ class DetalleVenta(db.Model):
     cantidad = db.Column(db.Integer, nullable=False)
     precio_unitario = db.Column(db.Float, nullable=False)
 
-# ==================== RUTAS ====================
+# ==================== RUTAS VISTAS Y POS ====================
 
 @app.route('/')
 def index():
@@ -149,7 +150,7 @@ def ver_inventario():
     productos = Producto.query.all()
     return render_template('inventario.html', productos=productos)
 
-# --- MÓDULO GESTIÓN DE MENÚ Y RECETAS ---
+# ==================== MÓDULO GESTIÓN DE MENÚ Y RECETAS ====================
 
 @app.route('/menu')
 def gestionar_menu():
@@ -158,35 +159,77 @@ def gestionar_menu():
     insumos = Producto.query.all()
     return render_template('menu.html', platillos=platillos, categorias=categorias, insumos=insumos)
 
-@app.route('/api/platillo/crear', methods=['POST'])
-def crear_platillo():
+@app.route('/api/platillo/obtener/<int:platillo_id>')
+def obtener_platillo_detalle(platillo_id):
+    platillo = Platillo.query.get_or_404(platillo_id)
+    ingredientes = [
+        {
+            "producto_id": r.producto_id,
+            "nombre": r.producto.nombre,
+            "cantidad": r.cantidad_requerida,
+            "unidad": r.producto.unidad
+        } for r in platillo.receta
+    ]
+    return jsonify({
+        "id": platillo.id,
+        "nombre": platillo.nombre,
+        "precio": platillo.precio,
+        "categoria_id": platillo.categoria_id,
+        "ingredientes": ingredientes
+    })
+
+@app.route('/api/platillo/guardar', methods=['POST'])
+def guardar_platillo_full():
     try:
         data = request.get_json()
+        platillo_id = data.get('id')
         nombre = data.get('nombre')
         precio = float(data.get('precio', 0))
         categoria_id = int(data.get('categoria_id'))
-        ingredientes = data.get('ingredientes', [])  # Lista de {producto_id, cantidad}
+        ingredientes = data.get('ingredientes', [])
 
-        nuevo_platillo = Platillo(
-            nombre=nombre,
-            precio=precio,
-            categoria_id=categoria_id,
-            es_compuesto=len(ingredientes) > 0
-        )
-        db.session.add(nuevo_platillo)
+        if platillo_id:
+            platillo = Platillo.query.get(platillo_id)
+            platillo.nombre = nombre
+            platillo.precio = precio
+            platillo.categoria_id = categoria_id
+            platillo.es_compuesto = len(ingredientes) > 0
+            
+            # Limpiar la receta existente para actualizarla
+            Receta.query.filter_by(platillo_id=platillo.id).delete()
+        else:
+            platillo = Platillo(
+                nombre=nombre,
+                precio=precio,
+                categoria_id=categoria_id,
+                es_compuesto=len(ingredientes) > 0
+            )
+            db.session.add(platillo)
+        
         db.session.commit()
 
-        # Guardar Receta
+        # Insertar / Re-insertar ingredientes de la receta
         for ing in ingredientes:
             receta_item = Receta(
-                platillo_id=nuevo_platillo.id,
+                platillo_id=platillo.id,
                 producto_id=int(ing['producto_id']),
                 cantidad_requerida=float(ing['cantidad'])
             )
             db.session.add(receta_item)
 
         db.session.commit()
-        return jsonify({"success": True, "message": "Platillo y receta guardados exitosamente."})
+        return jsonify({"success": True, "message": "Platillo y receta guardados correctamente."})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"success": False, "message": str(e)}), 500
+
+@app.route('/api/platillo/eliminar/<int:platillo_id>', methods=['DELETE'])
+def eliminar_platillo(platillo_id):
+    try:
+        platillo = Platillo.query.get_or_404(platillo_id)
+        db.session.delete(platillo)
+        db.session.commit()
+        return jsonify({"success": True, "message": "Platillo y su receta eliminados correctamente."})
     except Exception as e:
         db.session.rollback()
         return jsonify({"success": False, "message": str(e)}), 500
