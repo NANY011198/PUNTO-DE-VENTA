@@ -59,29 +59,51 @@ def inicializar_base_datos():
             cat_bebidas = Categoria(nombre="Bebidas")
             cat_postres = Categoria(nombre="Postres")
             db.session.add_all([cat_pizzas, cat_entradas, cat_bebidas, cat_postres])
-            
+
             masa = Producto(nombre="Masa de Pizza", unidad="Gramos", stock=10000.0)
             salsa = Producto(nombre="Salsa de Tomate", unidad="Gramos", stock=5000.0)
             queso = Producto(nombre="Queso Mozzarella", unidad="Gramos", stock=5000.0)
             pepperoni = Producto(nombre="Pepperoni", unidad="Gramos", stock=2000.0)
             pepsi = Producto(nombre="Pepsi", unidad="Unidades", stock=24.0, precio_venta=1.25, es_directo=True)
-            
+
             db.session.add_all([masa, salsa, queso, pepperoni, pepsi])
             db.session.commit()
 
-            p_pepperoni = Platillo(nombre="Pepperoni", precio=8.99, categoria=cat_pizzas, es_compuesto=True)
-            b_pepsi = Platillo(nombre="Pepsi", precio=1.25, categoria=cat_bebidas, es_compuesto=False)
-            db.session.add_all([p_pepperoni, b_pepsi])
-            db.session.commit()
+        # Obtener la categoría de Pizzas y los insumos
+        cat_pizzas = Categoria.query.filter_by(nombre="Pizzas").first()
+        masa = Producto.query.filter_by(nombre="Masa de Pizza").first()
+        salsa = Producto.query.filter_by(nombre="Salsa de Tomate").first()
+        queso = Producto.query.filter_by(nombre="Queso Mozzarella").first()
+        pepperoni = Producto.query.filter_by(nombre="Pepperoni").first()
 
-            r1 = Receta(platillo=p_pepperoni, producto=masa, cantidad_requerida=200)
-            r2 = Receta(platillo=p_pepperoni, producto=salsa, cantidad_requerida=80)
-            r3 = Receta(platillo=p_pepperoni, producto=queso, cantidad_requerida=150)
-            r4 = Receta(platillo=p_pepperoni, producto=pepperoni, cantidad_requerida=50)
-            db.session.add_all([r1, r2, r3, r4])
-            db.session.commit()
+        # Lista de pizzas a asegurar en la base de datos
+        pizzas_datos = [
+            ("Pepperoni", 8.99),
+            ("Suprema", 10.99),
+            ("Hawaiana", 9.99),
+            ("Loroco", 8.99)
+        ]
 
-# ==================== RUTAS ====================
+        for nombre_p, precio_p in pizzas_datos:
+            platillo = Platillo.query.filter_by(nombre=nombre_p).first()
+            if not platillo and cat_pizzas:
+                nuevo_platillo = Platillo(
+                    nombre=nombre_p,
+                    precio=precio_p,
+                    categoria=cat_pizzas,
+                    es_compuesto=True
+                )
+                db.session.add(nuevo_platillo)
+                db.session.commit()
+
+                # Si es Pepperoni, asociarle su receta con insumos
+                if nombre_p == "Pepperoni" and masa and salsa and queso and pepperoni:
+                    r1 = Receta(platillo=nuevo_platillo, producto=masa, cantidad_requerida=200)
+                    r2 = Receta(platillo=nuevo_platillo, producto=salsa, cantidad_requerida=80)
+                    r3 = Receta(platillo=nuevo_platillo, producto=queso, cantidad_requerida=150)
+                    r4 = Receta(platillo=nuevo_platillo, producto=pepperoni, cantidad_requerida=50)
+                    db.session.add_all([r1, r2, r3, r4])
+                    db.session.commit()# ==================== RUTAS ====================
 
 @app.route('/')
 def index():
