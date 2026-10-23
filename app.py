@@ -4,7 +4,7 @@ from flask_sqlalchemy import SQLAlchemy
 
 app = Flask(__name__)
 
-# Configuración de base de datos
+# Configuración de base de datos para Render o Local
 db_url = os.environ.get('DATABASE_URL')
 if db_url and db_url.startswith("postgres://"):
     db_url = db_url.replace("postgres://", "postgresql://", 1)
@@ -48,7 +48,7 @@ class Receta(db.Model):
     cantidad_requerida = db.Column(db.Float, nullable=False)
     producto = db.relationship('Producto')
 
-# ==================== INICIALIZACIÓN AUTOMÁTICA EN RENDER ====================
+# ==================== INICIALIZACIÓN SEGURA ====================
 
 def inicializar_base_datos():
     with app.app_context():
@@ -60,7 +60,6 @@ def inicializar_base_datos():
             cat_postres = Categoria(nombre="Postres")
             db.session.add_all([cat_pizzas, cat_entradas, cat_bebidas, cat_postres])
             
-            # Insumos base
             masa = Producto(nombre="Masa de Pizza", unidad="Gramos", stock=10000.0)
             salsa = Producto(nombre="Salsa de Tomate", unidad="Gramos", stock=5000.0)
             queso = Producto(nombre="Queso Mozzarella", unidad="Gramos", stock=5000.0)
@@ -70,13 +69,11 @@ def inicializar_base_datos():
             db.session.add_all([masa, salsa, queso, pepperoni, pepsi])
             db.session.commit()
 
-            # Platillos base
             p_pepperoni = Platillo(nombre="Pepperoni", precio=8.99, categoria=cat_pizzas, es_compuesto=True)
             b_pepsi = Platillo(nombre="Pepsi", precio=1.25, categoria=cat_bebidas, es_compuesto=False)
             db.session.add_all([p_pepperoni, b_pepsi])
             db.session.commit()
 
-            # Recetas
             r1 = Receta(platillo=p_pepperoni, producto=masa, cantidad_requerida=200)
             r2 = Receta(platillo=p_pepperoni, producto=salsa, cantidad_requerida=80)
             r3 = Receta(platillo=p_pepperoni, producto=queso, cantidad_requerida=150)
@@ -84,16 +81,14 @@ def inicializar_base_datos():
             db.session.add_all([r1, r2, r3, r4])
             db.session.commit()
 
-# Ejecutar inicialización al cargar
-try:
-    inicializar_base_datos()
-except Exception as e:
-    print(f"Error al inicializar la base de datos: {e}")
-
 # ==================== RUTAS ====================
 
 @app.route('/')
 def index():
+    try:
+        inicializar_base_datos()
+    except Exception as e:
+        print(f"Error al inicializar DB en la primera petición: {e}")
     categorias = Categoria.query.all()
     return render_template('index.html', categorias=categorias)
 
