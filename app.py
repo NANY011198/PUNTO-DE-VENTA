@@ -1,4 +1,5 @@
 import os
+from datetime import datetime
 from flask import Flask, render_template, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
 
@@ -14,8 +15,9 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
 
-# ==================== MODELOS ====================
+# ==================== MODELOS (BASE DE DATOS ERP) ====================
 
+# --- MENÚ E INVENTARIO ---
 class Categoria(db.Model):
     __tablename__ = 'categoria'
     id = db.Column(db.Integer, primary_key=True)
@@ -26,7 +28,7 @@ class Producto(db.Model):
     __tablename__ = 'producto'
     id = db.Column(db.Integer, primary_key=True)
     nombre = db.Column(db.String(100), nullable=False)
-    unidad = db.Column(db.String(20), default='Unidad')
+    unidad = db.Column(db.String(20), default='Unidad')  # Gramos, Mililitros, Unidades, etc.
     stock = db.Column(db.Float, default=0.0)
     precio_venta = db.Column(db.Float, nullable=True)
     es_directo = db.Column(db.Boolean, default=False)
@@ -47,6 +49,81 @@ class Receta(db.Model):
     producto_id = db.Column(db.Integer, db.ForeignKey('producto.id'), nullable=False)
     cantidad_requerida = db.Column(db.Float, nullable=False)
     producto = db.relationship('Producto')
+
+# --- PROVEEDORES Y COMPRAS ---
+class Proveedor(db.Model):
+    __tablename__ = 'proveedor'
+    id = db.Column(db.Integer, primary_key=True)
+    nombre = db.Column(db.String(100), nullable=False)
+    contacto = db.Column(db.String(100), nullable=True)
+    telefono = db.Column(db.String(20), nullable=True)
+    correo = db.Column(db.String(100), nullable=True)
+    direccion = db.Column(db.String(200), nullable=True)
+    compras = db.relationship('Compra', backref='proveedor', lazy=True)
+
+class Compra(db.Model):
+    __tablename__ = 'compra'
+    id = db.Column(db.Integer, primary_key=True)
+    fecha = db.Column(db.DateTime, default=datetime.utcnow)
+    numero_factura = db.Column(db.String(50), nullable=True)
+    proveedor_id = db.Column(db.Integer, db.ForeignKey('proveedor.id'), nullable=False)
+    monto_total = db.Column(db.Float, default=0.0)
+    detalles = db.relationship('DetalleCompra', backref='compra', cascade="all, delete-orphan")
+
+class DetalleCompra(db.Model):
+    __tablename__ = 'detalle_compra'
+    id = db.Column(db.Integer, primary_key=True)
+    compra_id = db.Column(db.Integer, db.ForeignKey('compra.id'), nullable=False)
+    producto_id = db.Column(db.Integer, db.ForeignKey('producto.id'), nullable=False)
+    cantidad = db.Column(db.Float, nullable=False)
+    precio_unitario = db.Column(db.Float, nullable=False)
+    subtotal = db.Column(db.Float, nullable=False)
+    producto = db.relationship('Producto')
+
+# --- ACTIVOS FIJOS ---
+class Activo(db.Model):
+    __tablename__ = 'activo'
+    id = db.Column(db.Integer, primary_key=True)
+    nombre = db.Column(db.String(100), nullable=False)
+    descripcion = db.Column(db.String(200), nullable=True)
+    valor = db.Column(db.Float, nullable=False)
+    fecha_adquisicion = db.Column(db.DateTime, default=datetime.utcnow)
+    proveedor_id = db.Column(db.Integer, db.ForeignKey('proveedor.id'), nullable=True)
+
+# --- VENTAS Y COBROS ---
+class Venta(db.Model):
+    __tablename__ = 'venta'
+    id = db.Column(db.Integer, primary_key=True)
+    fecha = db.Column(db.DateTime, default=datetime.utcnow)
+    total = db.Column(db.Float, nullable=False)
+    metodo_pago = db.Column(db.String(20), default='Efectivo')  # Efectivo, Tarjeta, Transferencia
+    detalles = db.relationship('DetalleVenta', backref='venta', cascade="all, delete-orphan")
+
+class DetalleVenta(db.Model):
+    __tablename__ = 'detalle_venta'
+    id = db.Column(db.Integer, primary_key=True)
+    venta_id = db.Column(db.Integer, db.ForeignKey('venta.id'), nullable=False)
+    platillo_id = db.Column(db.Integer, db.ForeignKey('platillo.id'), nullable=False)
+    cantidad = db.Column(db.Integer, nullable=False)
+    precio_unitario = db.Column(db.Float, nullable=False)
+    platillo = db.relationship('Platillo')
+
+# --- CONTABILIDAD Y CAJA CHICA ---
+class MovimientoCaja(db.Model):
+    __tablename__ = 'movimiento_caja'
+    id = db.Column(db.Integer, primary_key=True)
+    fecha = db.Column(db.DateTime, default=datetime.utcnow)
+    tipo = db.Column(db.String(20), nullable=False)  # Apertura, Ingreso, Egreso, Cierre
+    monto = db.Column(db.Float, nullable=False)
+    descripcion = db.Column(db.String(200), nullable=True)
+
+class Gasto(db.Model):
+    __tablename__ = 'gasto'
+    id = db.Column(db.Integer, primary_key=True)
+    fecha = db.Column(db.DateTime, default=datetime.utcnow)
+    concepto = db.Column(db.String(150), nullable=False)
+    monto = db.Column(db.Float, nullable=False)
+    categoria_gasto = db.Column(db.String(50), default='Operativo')  # Alquiler, Servicios, Planilla, etc.
 
 # ==================== INICIALIZACIÓN SEGURA ====================
 
@@ -146,16 +223,35 @@ def obtener_platillos(categoria_id):
 def procesar_venta():
     data = request.get_json()
     items = data.get('items', [])
+    metodo_pago = data.get('metodo_pago', 'Efectivo')
 
     if not items:
         return jsonify({"success": False, "message": "El carrito está vacío"}), 400
 
     try:
+        monto_total = 0.0
+        nueva_venta = Venta(total=0.0, metodo_pago=metodo_pago)
+        db.session.add(nueva_venta)
+        db.session.commit()
+
         for item in items:
             platillo = Platillo.query.get(item['id'])
             cantidad = item['cantidad']
 
             if platillo:
+                subtotal = platillo.precio * cantidad
+                monto_total += subtotal
+
+                # Registrar detalle de venta en historial
+                detalle = DetalleVenta(
+                    venta_id=nueva_venta.id,
+                    platillo_id=platillo.id,
+                    cantidad=cantidad,
+                    precio_unitario=platillo.precio
+                )
+                db.session.add(detalle)
+
+                # Descontar inventario según receta o directo
                 if platillo.es_compuesto:
                     for ingrediente in platillo.receta:
                         producto = ingrediente.producto
@@ -166,8 +262,9 @@ def procesar_venta():
                     if producto:
                         producto.stock -= cantidad
 
+        nueva_venta.total = monto_total
         db.session.commit()
-        return jsonify({"success": True, "message": "Venta realizada e inventario descontado con éxito."})
+        return jsonify({"success": True, "message": f"Venta registrada con éxito ({metodo_pago})."})
 
     except Exception as e:
         db.session.rollback()
