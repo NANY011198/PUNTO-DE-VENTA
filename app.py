@@ -53,81 +53,79 @@ class Receta(db.Model):
 def inicializar_base_datos():
     with app.app_context():
         db.create_all()
-        if Categoria.query.count() == 0:
-            cat_pizzas = Categoria(nombre="Pizzas")
-            cat_entradas = Categoria(nombre="Entradas")
-            cat_bebidas = Categoria(nombre="Bebidas")
-            cat_postres = Categoria(nombre="Postres")
-            db.session.add_all([cat_pizzas, cat_entradas, cat_bebidas, cat_postres])
+        
+        # 1. Crear Categorías base si no existen
+        categorias_base = ["Pizzas", "Entradas", "Bebidas", "Postres"]
+        for cat_nombre in categorias_base:
+            if not Categoria.query.filter_by(nombre=cat_nombre).first():
+                db.session.add(Categoria(nombre=cat_nombre))
+        db.session.commit()
 
+        # 2. Crear Insumos Base si no existen
+        if not Producto.query.filter_by(nombre="Masa de Pizza").first():
             masa = Producto(nombre="Masa de Pizza", unidad="Gramos", stock=10000.0)
             salsa = Producto(nombre="Salsa de Tomate", unidad="Gramos", stock=5000.0)
             queso = Producto(nombre="Queso Mozzarella", unidad="Gramos", stock=5000.0)
             pepperoni = Producto(nombre="Pepperoni", unidad="Gramos", stock=2000.0)
-            pepsi = Producto(nombre="Pepsi", unidad="Unidades", stock=24.0, precio_venta=1.25, es_directo=True)
-
-            db.session.add_all([masa, salsa, queso, pepperoni, pepsi])
+            pepsi_insumo = Producto(nombre="Pepsi", unidad="Unidades", stock=24.0, precio_venta=1.25, es_directo=True)
+            db.session.add_all([masa, salsa, queso, pepperoni, pepsi_insumo])
             db.session.commit()
 
-        # Obtener referencias a las categorías
-        c_pizzas = Categoria.query.filter_by(nombre="Pizzas").first()
-        c_entradas = Categoria.query.filter_by(nombre="Entradas").first()
-        c_bebidas = Categoria.query.filter_by(nombre="Bebidas").first()
-        c_postres = Categoria.query.filter_by(nombre="Postres").first()
-
-        # Obtener insumos para las recetas
-        masa = Producto.query.filter_by(nombre="Masa de Pizza").first()
-        salsa = Producto.query.filter_by(nombre="Salsa de Tomate").first()
-        queso = Producto.query.filter_by(nombre="Queso Mozzarella").first()
-        pepperoni = Producto.query.filter_by(nombre="Pepperoni").first()
-
-        # Diccionario con el menú completo por categoría
+        # 3. Definir Menú por Nombre de Categoría
         menu = {
-            c_pizzas: [
+            "Pizzas": [
                 ("Pepperoni", 8.99, True),
                 ("Suprema", 10.99, True),
                 ("Hawaiana", 9.99, True),
                 ("Loroco", 8.99, True)
             ],
-            c_entradas: [
+            "Entradas": [
                 ("Pan con Ajo", 3.50, False),
                 ("Palitroques", 4.00, False),
                 ("Papas Fritas", 2.99, False)
             ],
-            c_bebidas: [
+            "Bebidas": [
                 ("Pepsi", 1.25, False),
                 ("Coca Cola", 1.25, False),
                 ("Kolashanpan", 1.25, False)
             ],
-            c_postres: [
+            "Postres": [
                 ("Pie de Manzana", 2.50, False),
                 ("Volcán de Chocolate", 3.00, False)
             ]
         }
 
-        # Registrar los platillos que no existan aún
-        for cat, platillos in menu.items():
-            if cat:
-                for nombre_p, precio_p, es_comp in platillos:
-                    platillo = Platillo.query.filter_by(nombre=nombre_p).first()
-                    if not platillo:
+        # 4. Insertar Platillos y Vincular Receta
+        for nom_cat, lista_platillos in menu.items():
+            cat_obj = Categoria.query.filter_by(nombre=nom_cat).first()
+            if cat_obj:
+                for nombre_p, precio_p, es_comp in lista_platillos:
+                    if not Platillo.query.filter_by(nombre=nombre_p).first():
                         nuevo_p = Platillo(
                             nombre=nombre_p,
                             precio=precio_p,
-                            categoria=cat,
+                            categoria=cat_obj,
                             es_compuesto=es_comp
                         )
                         db.session.add(nuevo_p)
                         db.session.commit()
 
-                        # Receta para la pizza Pepperoni
-                        if nombre_p == "Pepperoni" and masa and salsa and queso and pepperoni:
-                            r1 = Receta(platillo=nuevo_p, producto=masa, cantidad_requerida=200)
-                            r2 = Receta(platillo=nuevo_p, producto=salsa, cantidad_requerida=80)
-                            r3 = Receta(platillo=nuevo_p, producto=queso, cantidad_requerida=150)
-                            r4 = Receta(platillo=nuevo_p, producto=pepperoni, cantidad_requerida=50)
-                            db.session.add_all([r1, r2, r3, r4])
-                            db.session.commit()                    db.session.commit()# ==================== RUTAS ====================
+                        # Vincular receta únicamente a Pepperoni
+                        if nombre_p == "Pepperoni":
+                            masa = Producto.query.filter_by(nombre="Masa de Pizza").first()
+                            salsa = Producto.query.filter_by(nombre="Salsa de Tomate").first()
+                            queso = Producto.query.filter_by(nombre="Queso Mozzarella").first()
+                            pep = Producto.query.filter_by(nombre="Pepperoni").first()
+                            if masa and salsa and queso and pep:
+                                db.session.add_all([
+                                    Receta(platillo=nuevo_p, producto=masa, cantidad_requerida=200),
+                                    Receta(platillo=nuevo_p, producto=salsa, cantidad_requerida=80),
+                                    Receta(platillo=nuevo_p, producto=queso, cantidad_requerida=150),
+                                    Receta(platillo=nuevo_p, producto=pep, cantidad_requerida=50)
+                                ])
+                                db.session.commit()
+
+# ==================== RUTAS ====================
 
 @app.route('/')
 def index():
