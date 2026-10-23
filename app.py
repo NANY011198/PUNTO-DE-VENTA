@@ -48,7 +48,49 @@ class Receta(db.Model):
     cantidad_requerida = db.Column(db.Float, nullable=False)
     producto = db.relationship('Producto')
 
-# ==================== RUTAS Y VISTAS ====================
+# ==================== INICIALIZACIÓN AUTOMÁTICA EN RENDER ====================
+
+def inicializar_base_datos():
+    with app.app_context():
+        db.create_all()
+        if Categoria.query.count() == 0:
+            cat_pizzas = Categoria(nombre="Pizzas")
+            cat_entradas = Categoria(nombre="Entradas")
+            cat_bebidas = Categoria(nombre="Bebidas")
+            cat_postres = Categoria(nombre="Postres")
+            db.session.add_all([cat_pizzas, cat_entradas, cat_bebidas, cat_postres])
+            
+            # Insumos base
+            masa = Producto(nombre="Masa de Pizza", unidad="Gramos", stock=10000.0)
+            salsa = Producto(nombre="Salsa de Tomate", unidad="Gramos", stock=5000.0)
+            queso = Producto(nombre="Queso Mozzarella", unidad="Gramos", stock=5000.0)
+            pepperoni = Producto(nombre="Pepperoni", unidad="Gramos", stock=2000.0)
+            pepsi = Producto(nombre="Pepsi", unidad="Unidades", stock=24.0, precio_venta=1.25, es_directo=True)
+            
+            db.session.add_all([masa, salsa, queso, pepperoni, pepsi])
+            db.session.commit()
+
+            # Platillos base
+            p_pepperoni = Platillo(nombre="Pepperoni", precio=8.99, categoria=cat_pizzas, es_compuesto=True)
+            b_pepsi = Platillo(nombre="Pepsi", precio=1.25, categoria=cat_bebidas, es_compuesto=False)
+            db.session.add_all([p_pepperoni, b_pepsi])
+            db.session.commit()
+
+            # Recetas
+            r1 = Receta(platillo=p_pepperoni, producto=masa, cantidad_requerida=200)
+            r2 = Receta(platillo=p_pepperoni, producto=salsa, cantidad_requerida=80)
+            r3 = Receta(platillo=p_pepperoni, producto=queso, cantidad_requerida=150)
+            r4 = Receta(platillo=p_pepperoni, producto=pepperoni, cantidad_requerida=50)
+            db.session.add_all([r1, r2, r3, r4])
+            db.session.commit()
+
+# Ejecutar inicialización al cargar
+try:
+    inicializar_base_datos()
+except Exception as e:
+    print(f"Error al inicializar la base de datos: {e}")
+
+# ==================== RUTAS ====================
 
 @app.route('/')
 def index():
@@ -76,13 +118,11 @@ def procesar_venta():
 
             if platillo:
                 if platillo.es_compuesto:
-                    # Descontar insumos por Receta
                     for ingrediente in platillo.receta:
                         producto = ingrediente.producto
                         descuento = ingrediente.cantidad_requerida * cantidad
                         producto.stock -= descuento
                 else:
-                    # Descontar Producto Directo (Bebidas / Postres)
                     producto = Producto.query.filter_by(nombre=platillo.nombre).first()
                     if producto:
                         producto.stock -= cantidad
@@ -100,6 +140,4 @@ def ver_inventario():
     return render_template('inventario.html', productos=productos)
 
 if __name__ == '__main__':
-    with app.app_context():
-        db.create_all()
     app.run(debug=True)
