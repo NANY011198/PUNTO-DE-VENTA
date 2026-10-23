@@ -14,10 +14,11 @@
     </div>
 
     <div class="row">
-        <!-- FORMULARIO NUEVO PLATILLO Y RECETA -->
+        <!-- FORMULARIO PLATILLO Y RECETA -->
         <div class="col-md-5">
             <div class="card shadow-sm p-3 mb-4">
-                <h4 class="card-title mb-3">➕ Nuevo Platillo</h4>
+                <h4 class="card-title mb-3" id="form-titulo">➕ Nuevo Platillo</h4>
+                <input type="hidden" id="platillo-id" value="">
                 
                 <div class="mb-3">
                     <label class="form-label fw-bold">Nombre del Platillo:</label>
@@ -40,7 +41,7 @@
 
                 <hr>
                 <h5 class="fw-bold">🧪 Receta / Ingredientes (Insumos)</h5>
-                <p class="small text-muted">Añade los insumos que se descontarán del stock con cada venta.</p>
+                <p class="small text-muted">Añade o modifica los insumos que se descontarán del stock.</p>
 
                 <div class="row g-2 mb-2">
                     <div class="col-7">
@@ -66,7 +67,10 @@
                     <li class="list-group-item text-muted text-center" id="empty-ing">Sin ingredientes asignados</li>
                 </ul>
 
-                <button class="btn btn-primary w-100 fw-bold py-2" onclick="guardarPlatillo()">GUARDAR PLATILLO</button>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-primary flex-fill fw-bold py-2" id="btn-guardar" onclick="guardarPlatillo()">GUARDAR PLATILLO</button>
+                    <button class="btn btn-secondary py-2 d-none" id="btn-cancelar" onclick="limpiarFormulario()">Cancelar</button>
+                </div>
             </div>
         </div>
 
@@ -82,6 +86,7 @@
                                 <th>Categoría</th>
                                 <th>Precio</th>
                                 <th>Receta</th>
+                                <th class="text-center">Acciones</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -101,10 +106,16 @@
                                         <span class="small text-muted">Directo / Sin receta</span>
                                     {% endif %}
                                 </td>
+                                <td class="text-center">
+                                    <div class="btn-group btn-group-sm">
+                                        <button class="btn btn-outline-warning" title="Editar" onclick="editarPlatillo({{ p.id }})">✏️</button>
+                                        <button class="btn btn-outline-danger" title="Eliminar" onclick="eliminarPlatillo({{ p.id }}, '{{ p.nombre }}')">🗑️</button>
+                                    </div>
+                                </td>
                             </tr>
                             {% else %}
                             <tr>
-                                <td colspan="4" class="text-center text-muted py-3">No hay platillos registrados.</td>
+                                <td colspan="5" class="text-center text-muted py-3">No hay platillos registrados.</td>
                             </tr>
                             {% endfor %}
                         </tbody>
@@ -134,7 +145,12 @@
         const nombre = option.getAttribute('data-nombre');
         const unidad = option.getAttribute('data-unidad');
 
-        ingredientes.push({ producto_id: productoId, nombre, cantidad, unidad });
+        const exist = ingredientes.find(i => i.producto_id == productoId);
+        if (exist) {
+            exist.cantidad += cantidad;
+        } else {
+            ingredientes.push({ producto_id: productoId, nombre, cantidad, unidad });
+        }
         
         cantInput.value = '';
         select.value = '';
@@ -165,7 +181,38 @@
         renderIngredientes();
     }
 
+    function editarPlatillo(id) {
+        fetch(`/api/platillo/obtener/${id}`)
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById('platillo-id').value = data.id;
+                document.getElementById('nombre-platillo').value = data.nombre;
+                document.getElementById('precio-platillo').value = data.precio;
+                document.getElementById('categoria-platillo').value = data.categoria_id;
+                
+                ingredientes = data.ingredientes;
+                renderIngredientes();
+
+                document.getElementById('form-titulo').innerText = '✏️ Editar Platillo';
+                document.getElementById('btn-guardar').innerText = 'ACTUALIZAR PLATILLO';
+                document.getElementById('btn-cancelar').classList.remove('d-none');
+            });
+    }
+
+    function limpiarFormulario() {
+        document.getElementById('platillo-id').value = '';
+        document.getElementById('nombre-platillo').value = '';
+        document.getElementById('precio-platillo').value = '';
+        ingredientes = [];
+        renderIngredientes();
+
+        document.getElementById('form-titulo').innerText = '➕ Nuevo Platillo';
+        document.getElementById('btn-guardar').innerText = 'GUARDAR PLATILLO';
+        document.getElementById('btn-cancelar').classList.add('d-none');
+    }
+
     function guardarPlatillo() {
+        const id = document.getElementById('platillo-id').value;
         const nombre = document.getElementById('nombre-platillo').value.trim();
         const categoria_id = document.getElementById('categoria-platillo').value;
         const precio = document.getElementById('precio-platillo').value;
@@ -175,10 +222,11 @@
             return;
         }
 
-        fetch('/api/platillo/crear', {
+        fetch('/api/platillo/guardar', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
+                id: id ? parseInt(id) : null,
                 nombre: nombre,
                 categoria_id: categoria_id,
                 precio: precio,
@@ -194,6 +242,21 @@
                 alert("Error: " + data.message);
             }
         });
+    }
+
+    function eliminarPlatillo(id, nombre) {
+        if (confirm(`¿Estás seguro de que deseas eliminar el platillo "${nombre}" y su receta?`)) {
+            fetch(`/api/platillo/eliminar/${id}`, { method: 'DELETE' })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        alert(data.message);
+                        location.reload();
+                    } else {
+                        alert("Error: " + data.message);
+                    }
+                });
+        }
     }
 </script>
 </body>
