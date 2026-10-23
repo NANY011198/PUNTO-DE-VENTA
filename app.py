@@ -1,92 +1,105 @@
-from flask import Flask, render_template, request, redirect, url_for
+import os
+from flask import Flask, render_template, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
-from datetime import datetime, date
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///pos.db'
+
+# Configuración de base de datos
+db_url = os.environ.get('DATABASE_URL')
+if db_url and db_url.startswith("postgres://"):
+    db_url = db_url.replace("postgres://", "postgresql://", 1)
+
+app.config['SQLALCHEMY_DATABASE_URI'] = db_url or 'sqlite:///punto_venta.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
 
-# Modelo de Producto
+# ==================== MODELOS ====================
+
+class Categoria(db.Model):
+    __tablename__ = 'categoria'
+    id = db.Column(db.Integer, primary_key=True)
+    nombre = db.Column(db.String(50), nullable=False, unique=True)
+    platillos = db.relationship('Platillo', backref='categoria', lazy=True)
+
 class Producto(db.Model):
+    __tablename__ = 'producto'
+    id = db.Column(db.Integer, primary_key=True)
+    nombre = db.Column(db.String(100), nullable=False)
+    unidad = db.Column(db.String(20), default='Unidad')
+    stock = db.Column(db.Float, default=0.0)
+    precio_venta = db.Column(db.Float, nullable=True)
+    es_directo = db.Column(db.Boolean, default=False)
+
+class Platillo(db.Model):
+    __tablename__ = 'platillo'
     id = db.Column(db.Integer, primary_key=True)
     nombre = db.Column(db.String(100), nullable=False)
     precio = db.Column(db.Float, nullable=False)
-    stock = db.Column(db.Integer, default=0)
+    categoria_id = db.Column(db.Integer, db.ForeignKey('categoria.id'), nullable=False)
+    es_compuesto = db.Column(db.Boolean, default=True)
+    receta = db.relationship('Receta', backref='platillo', cascade="all, delete-orphan")
 
-# Modelo de Venta
-class Venta(db.Model):
+class Receta(db.Model):
+    __tablename__ = 'receta'
     id = db.Column(db.Integer, primary_key=True)
-    fecha = db.Column(db.DateTime, default=datetime.now)
-    producto_nombre = db.Column(db.String(100), nullable=False, default="Producto")
-    cantidad = db.Column(db.Integer, nullable=False, default=1)
-    total = db.Column(db.Float, nullable=False)
-    forma_pago = db.Column(db.String(50), nullable=False)
+    platillo_id = db.Column(db.Integer, db.ForeignKey('platillo.id'), nullable=False)
+    producto_id = db.Column(db.Integer, db.ForeignKey('producto.id'), nullable=False)
+    cantidad_requerida = db.Column(db.Float, nullable=False)
+    producto = db.relationship('Producto')
+
+# ==================== RUTAS Y VISTAS ====================
 
 @app.route('/')
-def inicio():
-    lista_productos = Producto.query.all()
-    return render_template('productos.html', productos=lista_productos)
+def index():
+    categorias = Categoria.query.all()
+    return render_template('index.html', categorias=categorias)
 
-@app.route('/agregar_producto', methods=['POST'])
-def agregar_producto():
-    nombre = request.form.get('nombre')
-    precio = float(request.form.get('precio'))
-    stock = int(request.form.get('stock'))
+@app.route('/api/platillos/<int:categoria_id>')
+def obtener_platillos(categoria_id):
+    platillos = Platillo.query.filter_by(categoria_id=categoria_id).all()
+    resultado = [{"id": p.id, "nombre": p.nombre, "precio": p.precio} for p in platillos]
+    return jsonify(resultado)
 
-    nuevo_producto = Producto(nombre=nombre, precio=precio, stock=stock)
-    db.session.add(nuevo_producto)
-    db.session.commit()
+@app.route('/api/vender', methods=['POST'])
+def procesar_venta():
+    data = request.get_json()
+    items = data.get('items', [])
 
-    return redirect(url_for('inicio'))
+    if not items:
+        return jsonify({"success": False, "message": "El carrito está vacío"}), 400
 
-@app.route('/pos')
-def pos():
-    productos = Producto.query.all()
-    ventas = Venta.query.order_by(Venta.id.desc()).all()
-    return render_template('ventas.html', productos=productos, ventas=ventas)
+    try:
+        for item in items:
+            platillo = Platillo.query.get(item['id'])
+            cantidad = item['cantidad']
 
-@app.route('/registrar_venta', methods=['POST'])
-def registrar_venta():
-    producto_id = int(request.form.get('producto_id'))
-    cantidad = int(request.form.get('cantidad'))
-    forma_pago = request.form.get('forma_pago')
+            if platillo:
+                if platillo.es_compuesto:
+                    # Descontar insumos por Receta
+                    for ingrediente in platillo.receta:
+                        producto = ingrediente.producto
+                        descuento = ingrediente.cantidad_requerida * cantidad
+                        producto.stock -= descuento
+                else:
+                    # Descontar Producto Directo (Bebidas / Postres)
+                    producto = Producto.query.filter_by(nombre=platillo.nombre).first()
+                    if producto:
+                        producto.stock -= cantidad
 
-    producto = db.session.get(Producto, producto_id)
-
-    if producto and producto.stock >= cantidad:
-        total = producto.precio * cantidad
-        producto.stock -= cantidad
-
-        nueva_venta = Venta(
-            producto_nombre=producto.nombre,
-            cantidad=cantidad,
-            total=total,
-            forma_pago=forma_pago
-        )
-        db.session.add(nueva_venta)
         db.session.commit()
+        return jsonify({"success": True, "message": "Venta realizada e inventario descontado con éxito."})
 
-    return redirect(url_for('pos'))
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"success": False, "message": str(e)}), 500
 
-@app.route('/reporte')
-def reporte():
-    hoy = date.today()
-    ventas_hoy = Venta.query.filter(db.func.date(Venta.fecha) == hoy).all()
-
-    total_dia = sum(v.total for v in ventas_hoy)
-    total_transacciones = len(ventas_hoy)
-
-    desglose = {
-        'Efectivo': sum(v.total for v in ventas_hoy if v.forma_pago == 'Efectivo'),
-        'Tarjeta': sum(v.total for v in ventas_hoy if v.forma_pago == 'Tarjeta'),
-        'Transferencia': sum(v.total for v in ventas_hoy if v.forma_pago == 'Transferencia')
-    }
-
-    return render_template('reportes.html', total_dia=total_dia, total_transacciones=total_transacciones, desglose=desglose)
+@app.route('/inventario')
+def ver_inventario():
+    productos = Producto.query.all()
+    return render_template('inventario.html', productos=productos)
 
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    app.run(debug=True)
