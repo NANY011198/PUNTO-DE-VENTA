@@ -69,41 +69,65 @@ def inicializar_base_datos():
             db.session.add_all([masa, salsa, queso, pepperoni, pepsi])
             db.session.commit()
 
-        # Obtener la categoría de Pizzas y los insumos
-        cat_pizzas = Categoria.query.filter_by(nombre="Pizzas").first()
+        # Obtener referencias a las categorías
+        c_pizzas = Categoria.query.filter_by(nombre="Pizzas").first()
+        c_entradas = Categoria.query.filter_by(nombre="Entradas").first()
+        c_bebidas = Categoria.query.filter_by(nombre="Bebidas").first()
+        c_postres = Categoria.query.filter_by(nombre="Postres").first()
+
+        # Obtener insumos para las recetas
         masa = Producto.query.filter_by(nombre="Masa de Pizza").first()
         salsa = Producto.query.filter_by(nombre="Salsa de Tomate").first()
         queso = Producto.query.filter_by(nombre="Queso Mozzarella").first()
         pepperoni = Producto.query.filter_by(nombre="Pepperoni").first()
 
-        # Lista de pizzas a asegurar en la base de datos
-        pizzas_datos = [
-            ("Pepperoni", 8.99),
-            ("Suprema", 10.99),
-            ("Hawaiana", 9.99),
-            ("Loroco", 8.99)
-        ]
+        # Diccionario con el menú completo por categoría
+        menu = {
+            c_pizzas: [
+                ("Pepperoni", 8.99, True),
+                ("Suprema", 10.99, True),
+                ("Hawaiana", 9.99, True),
+                ("Loroco", 8.99, True)
+            ],
+            c_entradas: [
+                ("Pan con Ajo", 3.50, False),
+                ("Palitroques", 4.00, False),
+                ("Papas Fritas", 2.99, False)
+            ],
+            c_bebidas: [
+                ("Pepsi", 1.25, False),
+                ("Coca Cola", 1.25, False),
+                ("Kolashanpan", 1.25, False)
+            ],
+            c_postres: [
+                ("Pie de Manzana", 2.50, False),
+                ("Volcán de Chocolate", 3.00, False)
+            ]
+        }
 
-        for nombre_p, precio_p in pizzas_datos:
-            platillo = Platillo.query.filter_by(nombre=nombre_p).first()
-            if not platillo and cat_pizzas:
-                nuevo_platillo = Platillo(
-                    nombre=nombre_p,
-                    precio=precio_p,
-                    categoria=cat_pizzas,
-                    es_compuesto=True
-                )
-                db.session.add(nuevo_platillo)
-                db.session.commit()
+        # Registrar los platillos que no existan aún
+        for cat, platillos in menu.items():
+            if cat:
+                for nombre_p, precio_p, es_comp in platillos:
+                    platillo = Platillo.query.filter_by(nombre=nombre_p).first()
+                    if not platillo:
+                        nuevo_p = Platillo(
+                            nombre=nombre_p,
+                            precio=precio_p,
+                            categoria=cat,
+                            es_compuesto=es_comp
+                        )
+                        db.session.add(nuevo_p)
+                        db.session.commit()
 
-                # Si es Pepperoni, asociarle su receta con insumos
-                if nombre_p == "Pepperoni" and masa and salsa and queso and pepperoni:
-                    r1 = Receta(platillo=nuevo_platillo, producto=masa, cantidad_requerida=200)
-                    r2 = Receta(platillo=nuevo_platillo, producto=salsa, cantidad_requerida=80)
-                    r3 = Receta(platillo=nuevo_platillo, producto=queso, cantidad_requerida=150)
-                    r4 = Receta(platillo=nuevo_platillo, producto=pepperoni, cantidad_requerida=50)
-                    db.session.add_all([r1, r2, r3, r4])
-                    db.session.commit()# ==================== RUTAS ====================
+                        # Receta para la pizza Pepperoni
+                        if nombre_p == "Pepperoni" and masa and salsa and queso and pepperoni:
+                            r1 = Receta(platillo=nuevo_p, producto=masa, cantidad_requerida=200)
+                            r2 = Receta(platillo=nuevo_p, producto=salsa, cantidad_requerida=80)
+                            r3 = Receta(platillo=nuevo_p, producto=queso, cantidad_requerida=150)
+                            r4 = Receta(platillo=nuevo_p, producto=pepperoni, cantidad_requerida=50)
+                            db.session.add_all([r1, r2, r3, r4])
+                            db.session.commit()                    db.session.commit()# ==================== RUTAS ====================
 
 @app.route('/')
 def index():
