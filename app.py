@@ -370,11 +370,19 @@ def registrar_compra():
 @app.route('/caja')
 def gestionar_caja():
     try:
-        sesion_activa = SesionCaja.query.filter_by(estado='Abierta').order_by(SesionCaja.id.desc()).first()
-        gastos = Gasto.query.order_by(Gasto.fecha.desc()).all() or []
+        hoy = date.today()
+
+        # Filtrar solo gastos del día de hoy
+        gastos = Gasto.query.filter(
+            db.func.date(Gasto.fecha) == hoy
+        ).order_by(Gasto.fecha.desc()).all() or []
         
-        # Consultar el historial reciente de ventas
-        ventas_historial = Venta.query.order_by(Venta.fecha.desc()).limit(20).all() or []
+        # Filtrar solo ventas del día de hoy
+        ventas_historial = Venta.query.filter(
+            db.func.date(Venta.fecha) == hoy
+        ).order_by(Venta.fecha.desc()).all() or []
+
+        sesion_activa = SesionCaja.query.filter_by(estado='Abierta').order_by(SesionCaja.id.desc()).first()
 
         ventas_efectivo = 0.0
         ventas_tarjeta = 0.0
@@ -415,7 +423,6 @@ def gestionar_caja():
     except Exception as e:
         print("Error en ruta /caja:", e)
         return f"<h3>Error interno al cargar la vista de caja: {str(e)}</h3>", 500
-
 @app.route('/api/caja/abrir', methods=['POST'])
 def abrir_caja():
     try:
