@@ -113,13 +113,13 @@ class Gasto(db.Model):
 
 from sqlalchemy import text
 
-# Crear automáticamente todas las tablas y actualizar columnas faltantes
+# Crear automáticamente todas las tablas y actualizar columnas faltantes en Postgres
 with app.app_context():
     try:
         db.create_all()
-        # Migración automática para agregar la columna 'categoria' en Postgres si la tabla ya existía
         with db.engine.connect() as conn:
             conn.execute(text("ALTER TABLE gasto ADD COLUMN IF NOT EXISTS categoria VARCHAR(50) DEFAULT 'General';"))
+            conn.execute(text("ALTER TABLE gasto ADD COLUMN IF NOT EXISTS metodo_pago VARCHAR(20) DEFAULT 'Efectivo';"))
             conn.commit()
     except Exception as e:
         print("Error en inicialización/migración de base de datos:", e)
