@@ -3,122 +3,99 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Compras y Proveedores</title>
+    <title>Compras y Proveedores - Charlie's Pizza</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/charlie.css">
 </head>
-<body class="bg-light">
-<div class="container py-4">
+<body>
+
+<!-- NAVBAR GLOBAL -->
+<nav class="navbar navbar-expand-lg border-bottom border-secondary mb-4 px-3">
+    <div class="container-fluid">
+        <a class="navbar-brand d-flex align-items-center gap-2" href="/hub">
+            <span class="fs-3">🍕</span>
+            <span>CHARLIE'S PIZZA</span>
+        </a>
+        <div class="d-flex gap-2">
+            <a href="/hub" class="btn btn-outline-charlie btn-sm">🏠 Menú Principal</a>
+            <a href="/pos" class="btn btn-outline-light btn-sm">🛒 POS</a>
+            <a href="/caja" class="btn btn-outline-light btn-sm">💵 Caja Chica</a>
+            <a href="/compras" class="btn btn-charlie btn-sm">🚚 Compras</a>
+            <a href="/menu" class="btn btn-outline-light btn-sm">⚙️ Menú</a>
+            <a href="/inventario" class="btn btn-outline-light btn-sm">📦 Stock</a>
+            <a href="/reportes" class="btn btn-outline-light btn-sm">📊 Reportes</a>
+            <a href="/logout" class="btn btn-outline-danger btn-sm">🚪 Salir</a>
+        </div>
+    </div>
+</nav>
+
+<div class="container-fluid px-4 pb-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2>🛒 Registro de Compras y Proveedores</h2>
+        <h2>Gestión de Compras & Proveedores</h2>
         <div>
-            <button class="btn btn-outline-success me-2" data-bs-toggle="modal" data-bs-target="#modalProveedor">🏭 Nuevo Proveedor</button>
-            <a href="/" class="btn btn-outline-primary">← Volver al POS</a>
+            <button class="btn btn-outline-charlie fw-bold me-2" data-bs-toggle="modal" data-bs-target="#modalCrearProveedor">➕ Nuevo Proveedor</button>
+            <button class="btn btn-charlie fw-bold" onclick="abrirModalCompra()">🧾 Registrar Compra</button>
         </div>
     </div>
 
-    <div class="row">
-        <!-- FORMULARIO NUEVA COMPRA -->
-        <div class="col-md-5 mb-4">
-            <div class="card shadow-sm p-3">
-                <h4 class="card-title mb-3">📝 Registrar Nueva Compra</h4>
-                
-                <div class="mb-3">
-                    <label class="form-label fw-bold">Proveedor:</label>
-                    <select id="compra-proveedor" class="form-select">
-                        <option value="" selected disabled>Selecciona un proveedor...</option>
-                        {% for prov in proveedores %}
-                            <option value="{{ prov.id }}">{{ prov.nombre }} {% if prov.contacto %}({{ prov.contacto }}){% endif %}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-
-                <div class="mb-3">
-                    <label class="form-label fw-bold">Número de Factura / Ticket:</label>
-                    <input type="text" id="compra-factura" class="form-control" placeholder="Ej. F-00123 o T-554">
-                </div>
-
-                <hr>
-                <h5 class="fw-bold mb-3">Agregar Insumos</h5>
-
-                <div class="mb-2">
-                    <label class="form-label">Insumo:</label>
-                    <select id="item-producto" class="form-select">
-                        <option value="" selected disabled>Selecciona insumo...</option>
-                        {% for ins in insumos %}
-                            <option value="{{ ins.id }}" data-nombre="{{ ins.nombre }}" data-unidad="{{ ins.unidad }}">{{ ins.nombre }} ({{ ins.unidad }})</option>
-                        {% endfor %}
-                    </select>
-                </div>
-
-                <div class="row g-2 mb-3">
-                    <div class="col-6">
-                        <label class="form-label">Cantidad:</label>
-                        <input type="number" step="0.01" id="item-cantidad" class="form-control" placeholder="0.00">
-                    </div>
-                    <div class="col-6">
-                        <label class="form-label">Precio Unit. ($):</label>
-                        <input type="number" step="0.01" id="item-precio" class="form-control" placeholder="0.00">
-                    </div>
-                </div>
-
-                <button class="btn btn-secondary w-100 mb-3" onclick="agregarItemACompra()">+ Añadir a la Lista</button>
-
-                <!-- TABLA TEMPORAL DE ITEMS -->
-                <div class="table-responsive mb-3">
-                    <table class="table table-sm table-bordered">
-                        <thead class="table-secondary">
+    <div class="row g-4">
+        <!-- LISTADO DE COMPRAS / FACTURAS -->
+        <div class="col-md-8">
+            <div class="card p-3">
+                <h4 class="card-title text-warning mb-3">Historial de Compras Recientes</h4>
+                <div class="table-responsive" style="max-height: 480px; overflow-y: auto;">
+                    <table class="table table-dark table-striped align-middle">
+                        <thead>
                             <tr>
-                                <th>Insumo</th>
-                                <th>Cant.</th>
-                                <th>Precio</th>
-                                <th>Subtotal</th>
-                                <th></th>
-                            </tr>
-                        </thead>
-                        <tbody id="tabla-items-body">
-                            <tr>
-                                <td colspan="5" class="text-center text-muted small">No hay ítems agregados</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h5 class="mb-0 fw-bold">Total Compra:</h5>
-                    <h4 class="mb-0 text-success fw-bold" id="total-compra-texto">$0.00</h4>
-                </div>
-
-                <button class="btn btn-success w-100 fw-bold py-2" onclick="guardarCompra()">PROCESAR Y GUARDAR COMPRA</button>
-            </div>
-        </div>
-
-        <!-- HISTORIAL DE COMPRAS -->
-        <div class="col-md-7 mb-4">
-            <div class="card shadow-sm p-3">
-                <h4 class="card-title mb-3">📜 Historial de Compras Registradas</h4>
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle">
-                        <thead class="table-dark">
-                            <tr>
-                                <th>ID</th>
                                 <th>Fecha</th>
+                                <th>N° Factura</th>
                                 <th>Proveedor</th>
-                                <th>Factura</th>
-                                <th>Total</th>
+                                <th class="text-end">Monto Total</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for c in compras %}
                             <tr>
-                                <td class="fw-bold">#{{ c.id }}</td>
-                                <td class="small">{{ c.fecha.strftime('%Y-%m-%d %H:%M') if c.fecha else 'S/F' }}</td>
-                                <td class="fw-bold">{{ c.proveedor.nombre if c.proveedor else 'N/A' }}</td>
-                                <td><span class="badge bg-light text-dark border">{{ c.numero_factura or 'Sin comprobante' }}</span></td>
-                                <td class="fw-bold text-success">${{ "%.2f"|format(c.monto_total or 0) }}</td>
+                                <td><small class="text-white-50">{{ c.fecha.strftime('%d/%m/%Y %H:%M') }}</small></td>
+                                <td><span class="badge bg-secondary">{{ c.numero_factura or 'S/N' }}</span></td>
+                                <td><strong class="text-white">{{ c.proveedor.nombre }}</strong></td>
+                                <td class="text-end text-warning fw-bold fs-5">${{ "%.2f"|format(c.monto_total) }}</td>
                             </tr>
                             {% else %}
                             <tr>
-                                <td colspan="5" class="text-center text-muted py-3">No hay compras registradas en el historial.</td>
+                                <td colspan="4" class="text-center text-white-50 py-4">No hay compras registradas en el historial.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- DIRECTORIO DE PROVEEDORES -->
+        <div class="col-md-4">
+            <div class="card p-3">
+                <h4 class="card-title text-warning mb-3">Directorio de Proveedores</h4>
+                <div class="table-responsive" style="max-height: 480px; overflow-y: auto;">
+                    <table class="table table-dark table-hover align-middle">
+                        <thead>
+                            <tr>
+                                <th>Proveedor</th>
+                                <th>Contacto</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for prov in proveedores %}
+                            <tr>
+                                <td>
+                                    <strong class="text-white d-block">{{ prov.nombre }}</strong>
+                                    <small class="text-white-50">{{ prov.telefono or 'Sin tel.' }}</small>
+                                </td>
+                                <td><small class="badge bg-secondary">{{ prov.contacto or 'N/A' }}</small></td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="2" class="text-center text-white-50 py-3">No hay proveedores registrados.</td>
                             </tr>
                             {% endfor %}
                         </tbody>
@@ -129,31 +106,113 @@
     </div>
 </div>
 
-<!-- MODAL CREAR PROVEEDOR -->
-<div class="modal fade" id="modalProveedor" tabindex="-1">
-    <div class="modal-dialog">
+<!-- MODAL REGISTRAR COMPRA -->
+<div class="modal fade" id="modalCompra" tabindex="-1">
+    <div class="modal-dialog modal-lg">
         <div class="modal-content">
-            <div class="modal-header bg-success text-white">
-                <h5 class="modal-title">🏭 Nuevo Proveedor</h5>
+            <div class="modal-header">
+                <h5 class="modal-title">🧾 Registrar Factura de Compra</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <div class="mb-3">
-                    <label class="form-label fw-bold">Nombre del Proveedor / Empresa:</label>
-                    <input type="text" id="prov-nombre" class="form-control" placeholder="Ej. Distribuidora San José">
+                <div class="row g-3 mb-4">
+                    <div class="col-md-6">
+                        <label class="form-label text-white-50">Proveedor</label>
+                        <select id="compra-proveedor" class="form-select">
+                            {% for p in proveedores %}
+                                <option value="{{ p.id }}">{{ p.nombre }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-white-50">N° Factura / Comprobante</label>
+                        <input type="text" id="compra-factura" class="form-control" placeholder="Ej: FAC-00123">
+                    </div>
                 </div>
-                <div class="mb-3">
-                    <label class="form-label fw-bold">Contacto / Vendedor:</label>
-                    <input type="text" id="prov-contacto" class="form-control" placeholder="Ej. Juan Pérez">
+
+                <hr class="border-secondary">
+                <h5 class="text-warning mb-3">Insumos a Ingresar al Stock</h5>
+
+                <div class="row g-2 mb-3 align-items-end">
+                    <div class="col-md-5">
+                        <label class="form-label text-white-50">Insumo</label>
+                        <select id="compra-insumo" class="form-select">
+                            <option value="" selected disabled>Selecciona insumo...</option>
+                            {% for i in insumos %}
+                                <option value="{{ i.id }}" data-nombre="{{ i.nombre }}" data-unidad="{{ i.unidad }}">{{ i.nombre }} ({{ i.unidad }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label text-white-50">Cantidad</label>
+                        <input type="number" step="0.01" id="compra-cantidad" class="form-control" placeholder="0.00">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label text-white-50">Precio C/U ($)</label>
+                        <input type="number" step="0.01" id="compra-precio" class="form-control" placeholder="0.00">
+                    </div>
+                    <div class="col-md-2">
+                        <button type="button" class="btn btn-charlie w-100" onclick="agregarInsumoCompra()">➕ Añadir</button>
+                    </div>
                 </div>
-                <div class="mb-3">
-                    <label class="form-label fw-bold">Teléfono:</label>
-                    <input type="text" id="prov-telefono" class="form-control" placeholder="Ej. 7890-1234">
+
+                <div class="table-responsive">
+                    <table class="table table-dark table-striped align-middle">
+                        <thead>
+                            <tr>
+                                <th>Insumo</th>
+                                <th class="text-center">Cantidad</th>
+                                <th class="text-end">Precio C/U</th>
+                                <th class="text-end">Subtotal</th>
+                                <th class="text-center">Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabla-items-compra">
+                            <tr>
+                                <td colspan="5" class="text-center text-white-50">No hay insumos agregados a la compra.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="d-flex justify-content-end align-items-center mt-3 pt-2 border-top border-secondary">
+                    <span class="fs-5 me-3">TOTAL COMPRA:</span>
+                    <span id="compra-monto-total" class="fs-4 fw-bold text-warning">$0.00</span>
                 </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                <button type="button" class="btn btn-success fw-bold" onclick="guardarProveedor()">Guardar Proveedor</button>
+                <button type="button" class="btn btn-charlie" onclick="guardarCompra()">Guardar Factura & Cargar Stock</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL CREAR PROVEEDOR -->
+<div class="modal fade" id="modalCrearProveedor" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">➕ Registrar Nuevo Proveedor</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label text-white-50">Nombre de la Empresa / Proveedor</label>
+                    <input type="text" id="prov-nombre" class="form-control" placeholder="Ej: Distribuidora Láclea S.A.">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label text-white-50">Nombre de Contacto</label>
+                    <input type="text" id="prov-contacto" class="form-control" placeholder="Ej: Juan Pérez">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label text-white-50">Teléfono</label>
+                    <input type="text" id="prov-telefono" class="form-control" placeholder="Ej: 7671-0000">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-charlie" onclick="crearProveedor()">Guardar Proveedor</button>
             </div>
         </div>
     </div>
@@ -161,71 +220,119 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-    let carritoCompra = [];
+    let modalCompra;
+    let itemsCompra = [];
 
-    function agregarItemACompra() {
-        const select = document.getElementById('item-producto');
-        const prodId = select.value;
-        const nombre = select.options[select.selectedIndex]?.getAttribute('data-nombre');
-        const cantidad = parseFloat(document.getElementById('item-cantidad').value);
-        const precio = parseFloat(document.getElementById('item-precio').value);
+    document.addEventListener("DOMContentLoaded", () => {
+        modalCompra = new bootstrap.Modal(document.getElementById('modalCompra'));
+    });
 
-        if (!prodId || isNaN(cantidad) || cantidad <= 0 || isNaN(precio) || precio < 0) {
-            alert("Por favor selecciona un insumo e ingresa una cantidad y precio válidos.");
+    function abrirModalCompra() {
+        itemsCompra = [];
+        document.getElementById('compra-factura').value = '';
+        renderizarTablaCompra();
+        modalCompra.show();
+    }
+
+    function agregarInsumoCompra() {
+        let select = document.getElementById('compra-insumo');
+        let prodId = select.value;
+        let cant = parseFloat(document.getElementById('compra-cantidad').value);
+        let precio = parseFloat(document.getElementById('compra-precio').value);
+
+        if (!prodId || isNaN(cant) || cant <= 0 || isNaN(precio) || precio < 0) {
+            alert("Selecciona un insumo, cantidad y precio válidos.");
             return;
         }
 
-        const subtotal = cantidad * precio;
-        carritoCompra.push({
-            producto_id: prodId,
+        let option = select.options[select.selectedIndex];
+        let nombre = option.getAttribute('data-nombre');
+        let unidad = option.getAttribute('data-unidad');
+
+        itemsCompra.push({
+            producto_id: parseInt(prodId),
             nombre: nombre,
-            cantidad: cantidad,
+            unidad: unidad,
+            cantidad: cant,
             precio_unitario: precio,
-            subtotal: subtotal
+            subtotal: cant * precio
         });
 
-        document.getElementById('item-cantidad').value = '';
-        document.getElementById('item-precio').value = '';
-        select.value = '';
-        renderTablaItems();
+        document.getElementById('compra-cantidad').value = '';
+        document.getElementById('compra-precio').value = '';
+        select.selectedIndex = 0;
+        renderizarTablaCompra();
     }
 
-    function eliminarItem(index) {
-        carritoCompra.splice(index, 1);
-        renderTablaItems();
+    function eliminarItemCompra(index) {
+        itemsCompra.splice(index, 1);
+        renderizarTablaCompra();
     }
 
-    function renderTablaItems() {
-        const tbody = document.getElementById('tabla-items-body');
-        tbody.innerHTML = '';
+    function renderizarTablaCompra() {
+        let tbody = document.getElementById('tabla-items-compra');
+        let total = 0;
 
-        if (carritoCompra.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted small">No hay ítems agregados</td></tr>';
-            document.getElementById('total-compra-texto').innerText = '$0.00';
+        if (itemsCompra.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" class="text-center text-white-50">No hay insumos agregados a la compra.</td></tr>';
+            document.getElementById('compra-monto-total').innerText = '$0.00';
             return;
         }
 
-        let total = 0;
-        carritoCompra.forEach((item, index) => {
+        let html = '';
+        itemsCompra.forEach((item, index) => {
             total += item.subtotal;
-            tbody.innerHTML += `
+            html += `
                 <tr>
-                    <td class="small fw-bold">${item.nombre}</td>
-                    <td>${item.cantidad}</td>
-                    <td>$${item.precio_unitario.toFixed(2)}</td>
-                    <td class="fw-bold">$${item.subtotal.toFixed(2)}</td>
-                    <td class="text-center"><button class="btn btn-sm btn-outline-danger py-0" onclick="eliminarItem(${index})">×</button></td>
+                    <td><strong>${item.nombre}</strong></td>
+                    <td class="text-center">${item.cantidad} ${item.unidad}</td>
+                    <td class="text-end">$${item.precio_unitario.toFixed(2)}</td>
+                    <td class="text-end text-warning fw-bold">$${item.subtotal.toFixed(2)}</td>
+                    <td class="text-center">
+                        <button type="button" class="btn btn-sm btn-danger py-0 px-2" onclick="eliminarItemCompra(${index})">×</button>
+                    </td>
                 </tr>
             `;
         });
 
-        document.getElementById('total-compra-texto').innerText = `$${total.toFixed(2)}`;
+        tbody.innerHTML = html;
+        document.getElementById('compra-monto-total').innerText = '$' + total.toFixed(2);
     }
 
-    function guardarProveedor() {
-        const nombre = document.getElementById('prov-nombre').value.trim();
-        const contacto = document.getElementById('prov-contacto').value.trim();
-        const telefono = document.getElementById('prov-telefono').value.trim();
+    function guardarCompra() {
+        let provId = document.getElementById('compra-proveedor').value;
+        let factura = document.getElementById('compra-factura').value;
+
+        if (!provId) {
+            alert("Selecciona un proveedor.");
+            return;
+        }
+
+        if (itemsCompra.length === 0) {
+            alert("Agrega al menos un insumo a la compra.");
+            return;
+        }
+
+        fetch('/api/compra/registrar', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                proveedor_id: parseInt(provId),
+                numero_factura: factura,
+                items: itemsCompra
+            })
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) location.reload();
+            else alert(data.message);
+        });
+    }
+
+    function crearProveedor() {
+        let nombre = document.getElementById('prov-nombre').value.trim();
+        let contacto = document.getElementById('prov-contacto').value.trim();
+        let telefono = document.getElementById('prov-telefono').value.trim();
 
         if (!nombre) {
             alert("El nombre del proveedor es obligatorio.");
@@ -234,45 +341,16 @@
 
         fetch('/api/proveedor/crear', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({ nombre, contacto, telefono })
         })
-        .then(res => res.json())
+        .then(r => r.json())
         .then(data => {
-            alert(data.message);
             if (data.success) location.reload();
-        });
-    }
-
-    function guardarCompra() {
-        const proveedor_id = document.getElementById('compra-proveedor').value;
-        const numero_factura = document.getElementById('compra-factura').value.trim();
-
-        if (!proveedor_id) {
-            alert("Selecciona un proveedor.");
-            return;
-        }
-
-        if (carritoCompra.length === 0) {
-            alert("Agrega al menos un insumo a la lista de compra.");
-            return;
-        }
-
-        fetch('/api/compra/registrar', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                proveedor_id: parseInt(proveedor_id),
-                numero_factura: numero_factura,
-                items: carritoCompra
-            })
-        })
-        .then(res => res.json())
-        .then(data => {
-            alert(data.message);
-            if (data.success) location.reload();
+            else alert(data.message);
         });
     }
 </script>
+
 </body>
 </html>
