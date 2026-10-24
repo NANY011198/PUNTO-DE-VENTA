@@ -579,7 +579,10 @@ def obtener_datos_reportes():
         platillos_counter = {}
         for v in ventas:
             for det in v.detalles:
-                platillo_nombre = det.platillo.nombre if det.platillo else f"Platillo #{det.platillo_id}"
+                # Obtener nombre según la relación definida en el modelo
+                platillo_obj = getattr(det, 'platillo', None) or getattr(det, 'producto', None)
+                platillo_nombre = platillo_obj.nombre if platillo_obj else f"Item #{getattr(det, 'platillo_id', getattr(det, 'producto_id', 0))}"
+                
                 if platillo_nombre not in platillos_counter:
                     platillos_counter[platillo_nombre] = {"cantidad": 0, "monto": 0.0}
                 platillos_counter[platillo_nombre]["cantidad"] += det.cantidad
