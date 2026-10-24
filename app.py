@@ -458,5 +458,8 @@ def registrar_gasto():
         db.session.rollback()
         return jsonify({"success": False, "message": str(e)}), 500
 
+with app.app_context():
+    db.create_all()
+
 if __name__ == '__main__':
     app.run(debug=True)
