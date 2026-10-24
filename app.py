@@ -1,9 +1,13 @@
 import os
 from datetime import datetime, date
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, redirect, session, url_for
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import text
 
 app = Flask(__name__)
+
+# Configuración de clave secreta para manejo de sesiones
+app.secret_key = os.environ.get('SECRET_KEY', 'charlies_pizza_secret_key_2026')
 
 # Configuración de base de datos para Render o Local
 db_url = os.environ.get('DATABASE_URL')
@@ -29,7 +33,7 @@ class Producto(db.Model):
     nombre = db.Column(db.String(100), nullable=False, unique=True)
     unidad = db.Column(db.String(20), default='Unidad')
     stock = db.Column(db.Float, default=0.0)
-    stock_minimo = db.Column(db.Float, default=10.0) # <--- NUEVA COLUMNA
+    stock_minimo = db.Column(db.Float, default=10.0)
     precio_venta = db.Column(db.Float, nullable=True)
     es_directo = db.Column(db.Boolean, default=False)
 
@@ -76,8 +80,9 @@ class DetalleCompra(db.Model):
     producto_id = db.Column(db.Integer, db.ForeignKey('producto.id'), nullable=False)
     cantidad = db.Column(db.Float, nullable=False)
     precio_unitario = db.Column(db.Float, nullable=False)
-    subtotal = db.Column(db.Float, nullable=True) # <--- NUEVA COLUMNA
+    subtotal = db.Column(db.Float, nullable=True)
     producto = db.relationship('Producto')
+
 class Venta(db.Model):
     __tablename__ = 'venta'
     id = db.Column(db.Integer, primary_key=True)
@@ -112,8 +117,6 @@ class Gasto(db.Model):
     monto = db.Column(db.Float, nullable=False)
     metodo_pago = db.Column(db.String(20), default='Efectivo')
 
-from sqlalchemy import text
-
 # Crear automáticamente todas las tablas y actualizar columnas faltantes en Postgres
 with app.app_context():
     try:
@@ -122,14 +125,47 @@ with app.app_context():
             conn.execute(text("ALTER TABLE gasto ADD COLUMN IF NOT EXISTS categoria VARCHAR(50) DEFAULT 'General';"))
             conn.execute(text("ALTER TABLE gasto ADD COLUMN IF NOT EXISTS metodo_pago VARCHAR(20) DEFAULT 'Efectivo';"))
             conn.execute(text("ALTER TABLE producto ADD COLUMN IF NOT EXISTS stock_minimo FLOAT DEFAULT 10.0;"))
-            conn.execute(text("ALTER TABLE detalle_compra ADD COLUMN IF NOT EXISTS subtotal FLOAT DEFAULT 0.0;")) # <--- MIGRACIÓN
+            conn.execute(text("ALTER TABLE detalle_compra ADD COLUMN IF NOT EXISTS subtotal FLOAT DEFAULT 0.0;"))
             conn.commit()
     except Exception as e:
         print("Error en inicialización/migración de base de datos:", e)
-# ==================== RUTAS POS Y NAVEGACIÓN ====================
+
+# ==================== AUTENTICACIÓN Y SISTEMA DE SESIÓN ====================
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    error = None
+    if request.method == 'POST':
+        usuario = request.form.get('usuario')
+        password = request.form.get('password')
+        
+        # Credenciales de acceso
+        if usuario == 'admin' and password == 'charlie123':
+            session['usuario'] = usuario
+            return redirect('/hub')
+        else:
+            error = 'Usuario o contraseña incorrectos'
+            
+    return render_template('login.html', error=error)
+
+@app.route('/logout')
+def logout():
+    session.pop('usuario', None)
+    return redirect('/login')
 
 @app.route('/')
+@app.route('/hub')
+def hub():
+    if 'usuario' not in session:
+        return redirect('/login')
+    return render_template('hub.html')
+
+# ==================== RUTAS POS Y NAVEGACIÓN ====================
+
+@app.route('/pos')
 def index():
+    if 'usuario' not in session:
+        return redirect('/login')
     categorias = Categoria.query.all()
     return render_template('index.html', categorias=categorias)
 
@@ -190,6 +226,8 @@ def procesar_venta():
 
 @app.route('/inventario')
 def ver_inventario():
+    if 'usuario' not in session:
+        return redirect('/login')
     productos = Producto.query.all()
     return render_template('inventario.html', productos=productos)
 
@@ -268,6 +306,8 @@ def eliminar_producto(prod_id):
 
 @app.route('/menu')
 def gestionar_menu():
+    if 'usuario' not in session:
+        return redirect('/login')
     platillos = Platillo.query.all()
     categorias = Categoria.query.all()
     insumos = Producto.query.all()
@@ -349,6 +389,8 @@ def eliminar_platillo(platillo_id):
 
 @app.route('/compras')
 def gestionar_compras():
+    if 'usuario' not in session:
+        return redirect('/login')
     proveedores = Proveedor.query.all()
     insumos = Producto.query.all()
     historial_compras = Compra.query.order_by(Compra.fecha.desc()).all()
@@ -417,19 +459,19 @@ def registrar_compra():
         db.session.rollback()
         return jsonify({"success": False, "message": str(e)}), 500
 
-# ==================== MÓDULO CAJA CHICA Y GASTOS (CORREGIDO) ====================
+# ==================== MÓDULO CAJA CHICA Y GASTOS ====================
 
 @app.route('/caja')
 def gestionar_caja():
+    if 'usuario' not in session:
+        return redirect('/login')
     try:
         hoy = date.today()
 
-        # Filtrar solo gastos del día de hoy
         gastos = Gasto.query.filter(
             db.func.date(Gasto.fecha) == hoy
         ).order_by(Gasto.fecha.desc()).all() or []
         
-        # Filtrar solo ventas del día de hoy
         ventas_historial = Venta.query.filter(
             db.func.date(Venta.fecha) == hoy
         ).order_by(Venta.fecha.desc()).all() or []
@@ -475,6 +517,7 @@ def gestionar_caja():
     except Exception as e:
         print("Error en ruta /caja:", e)
         return f"<h3>Error interno al cargar la vista de caja: {str(e)}</h3>", 500
+
 @app.route('/api/caja/abrir', methods=['POST'])
 def abrir_caja():
     try:
@@ -542,6 +585,8 @@ def registrar_gasto():
 
 @app.route('/reportes')
 def ver_reportes():
+    if 'usuario' not in session:
+        return redirect('/login')
     return render_template('reportes.html')
 
 @app.route('/api/reportes/datos')
@@ -582,10 +627,8 @@ def obtener_datos_reportes():
         platillos_counter = {}
         for v in ventas:
             for det in v.detalles:
-                # Intentar obtener el ID del platillo/producto
                 p_id = getattr(det, 'platillo_id', None) or getattr(det, 'producto_id', None)
                 
-                # Obtener el nombre del mapa o del objeto directo
                 platillo_obj = getattr(det, 'platillo', None) or getattr(det, 'producto', None)
                 if platillo_obj and hasattr(platillo_obj, 'nombre'):
                     platillo_nombre = platillo_obj.nombre
@@ -615,5 +658,6 @@ def obtener_datos_reportes():
         })
     except Exception as e:
         return jsonify({"success": False, "message": str(e)}), 500
+
 if __name__ == '__main__':
     app.run(debug=True)
