@@ -93,6 +93,26 @@ class DetalleVenta(db.Model):
     cantidad = db.Column(db.Integer, nullable=False)
     precio_unitario = db.Column(db.Float, nullable=False)
 
+# --- NUEVOS MODELOS PARA CAJA CHICA Y GASTOS ---
+
+class SesionCaja(db.Model):
+    __tablename__ = 'sesion_caja'
+    id = db.Column(db.Integer, primary_key=True)
+    fecha_apertura = db.Column(db.DateTime, default=datetime.utcnow)
+    fecha_cierre = db.Column(db.DateTime, nullable=True)
+    monto_inicial = db.Column(db.Float, default=0.0)
+    monto_cierre_real = db.Column(db.Float, nullable=True)
+    estado = db.Column(db.String(20), default='Abierta')  # 'Abierta', 'Cerrada'
+
+class Gasto(db.Model):
+    __tablename__ = 'gasto'
+    id = db.Column(db.Integer, primary_key=True)
+    fecha = db.Column(db.DateTime, default=datetime.utcnow)
+    concepto = db.Column(db.String(150), nullable=False)
+    categoria = db.Column(db.String(50), default='General')  # Servicios, Sueldos, Alquiler, Mantenimiento, etc.
+    monto = db.Column(db.Float, nullable=False)
+    metodo_pago = db.Column(db.String(20), default='Efectivo')
+
 # ==================== RUTAS VISTAS Y POS ====================
 
 @app.route('/')
@@ -159,8 +179,6 @@ def procesar_venta():
 def ver_inventario():
     productos = Producto.query.all()
     return render_template('inventario.html', productos=productos)
-
-# ==================== API MÓDULO INSUMOS / PRODUCTOS ====================
 
 @app.route('/api/producto/crear', methods=['POST'])
 def crear_producto():
@@ -229,7 +247,6 @@ def guardar_platillo_full():
             platillo.precio = precio
             platillo.categoria_id = categoria_id
             platillo.es_compuesto = len(ingredientes) > 0
-            
             Receta.query.filter_by(platillo_id=platillo.id).delete()
         else:
             platillo = Platillo(
@@ -262,7 +279,7 @@ def eliminar_platillo(platillo_id):
         platillo = Platillo.query.get_or_404(platillo_id)
         db.session.delete(platillo)
         db.session.commit()
-        return jsonify({"success": True, "message": "Platillo y su receta eliminados correctamente."})
+        return jsonify({"success": True, "message": "Platillo y receta eliminados correctamente."})
     except Exception as e:
         db.session.rollback()
         return jsonify({"success": False, "message": str(e)}), 500
@@ -329,12 +346,114 @@ def registrar_compra():
                 precio_unitario=precio
             )
             db.session.add(detalle)
-
             producto.stock += cantidad
 
         nueva_compra.monto_total = monto_total
         db.session.commit()
         return jsonify({"success": True, "message": "Compra registrada e inventario actualizado."})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"success": False, "message": str(e)}), 500
+
+# ==================== MÓDULO CAJA CHICA Y GASTOS ====================
+
+@app.route('/caja')
+def gestionar_caja():
+    sesion_activa = SesionCaja.query.filter_by(estado='Abierta').order_by(SesionCaja.id.desc()).first()
+    gastos = Gasto.query.order_by(Gasto.fecha.desc()).all()
+
+    ventas_efectivo = 0.0
+    ventas_tarjeta = 0.0
+    ventas_transferencia = 0.0
+    gastos_efectivo = 0.0
+
+    if sesion_activa:
+        # Calcular ventas desde la fecha de apertura de caja
+        ventas_caja = Venta.query.filter(Venta.fecha >= sesion_activa.fecha_apertura).all()
+        for v in ventas_caja:
+            if v.metodo_pago == 'Efectivo':
+                ventas_efectivo += v.total
+            elif v.metodo_pago == 'Tarjeta':
+                ventas_tarjeta += v.total
+            elif v.metodo_pago == 'Transferencia':
+                ventas_transferencia += v.total
+
+        # Calcular gastos en efectivo desde apertura de caja
+        gastos_caja = Gasto.query.filter(Gasto.fecha >= sesion_activa.fecha_apertura).all()
+        for g in gastos_caja:
+            if g.metodo_pago == 'Efectivo':
+                gastos_efectivo += g.monto
+
+    efectivo_esperado = (sesion_activa.monto_inicial + ventas_efectivo - gastos_efectivo) if sesion_activa else 0.0
+
+    return render_template('caja.html', 
+                           sesion=sesion_activa, 
+                           gastos=gastos,
+                           ventas_efectivo=ventas_efectivo,
+                           ventas_tarjeta=ventas_tarjeta,
+                           ventas_transferencia=ventas_transferencia,
+                           gastos_efectivo=gastos_efectivo,
+                           efectivo_esperado=efectivo_esperado)
+
+@app.route('/api/caja/abrir', methods=['POST'])
+def abrir_caja():
+    try:
+        data = request.get_json()
+        monto_inicial = float(data.get('monto_inicial', 0.0))
+
+        activa = SesionCaja.query.filter_by(estado='Abierta').first()
+        if activa:
+            return jsonify({"success": False, "message": "Ya existe una sesión de caja abierta."}), 400
+
+        nueva_sesion = SesionCaja(monto_inicial=monto_inicial, estado='Abierta')
+        db.session.add(nueva_sesion)
+        db.session.commit()
+        return jsonify({"success": True, "message": "Caja abierta exitosamente."})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"success": False, "message": str(e)}), 500
+
+@app.route('/api/caja/cerrar', methods=['POST'])
+def cerrar_caja():
+    try:
+        data = request.get_json()
+        monto_cierre_real = float(data.get('monto_cierre_real', 0.0))
+
+        activa = SesionCaja.query.filter_by(estado='Abierta').first()
+        if not activa:
+            return jsonify({"success": False, "message": "No hay ninguna caja abierta."}), 400
+
+        activa.fecha_cierre = datetime.utcnow()
+        activa.monto_cierre_real = monto_cierre_real
+        activa.estado = 'Cerrada'
+
+        db.session.commit()
+        return jsonify({"success": True, "message": "Caja cerrada correctamente."})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"success": False, "message": str(e)}), 500
+
+@app.route('/api/gasto/registrar', methods=['POST'])
+def registrar_gasto():
+    try:
+        data = request.get_json()
+        concepto = data.get('concepto', '').strip()
+        categoria = data.get('categoria', 'General')
+        monto = float(data.get('monto', 0.0))
+        metodo_pago = data.get('metodo_pago', 'Efectivo')
+
+        if not concepto or monto <= 0:
+            return jsonify({"success": False, "message": "Concepto y monto válido son requeridos."}), 400
+
+        nuevo_gasto = Gasto(
+            concepto=concepto,
+            categoria=categoria,
+            monto=monto,
+            metodo_pago=metodo_pago
+        )
+        db.session.add(nuevo_gasto)
+        db.session.commit()
+        return jsonify({"success": True, "message": "Gasto registrado con éxito."})
     except Exception as e:
         db.session.rollback()
         return jsonify({"success": False, "message": str(e)}), 500

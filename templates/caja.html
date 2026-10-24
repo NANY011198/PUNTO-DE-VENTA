@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Caja Chica y Gastos Operativos</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>💵 Caja Chica y Control de Gastos</h2>
+        <a href="/" class="btn btn-outline-primary">← Volver al POS</a>
+    </div>
+
+    <!-- ESTADO DE LA CAJA -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            {% if sesion %}
+                <div class="card border-success shadow-sm p-3 bg-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <span class="badge bg-success mb-2 fs-6">CAJA ABIERTA</span>
+                            <h5 class="mb-1 text-muted">Apertura: <strong>{{ sesion.fecha_apertura.strftime('%Y-%m-%d %H:%M') }}</strong></h5>
+                            <h4 class="mb-0">Monto Inicial: <span class="text-primary">${{ "%.2f"|format(sesion.monto_inicial) }}</span></h4>
+                        </div>
+                        <button class="btn btn-danger fw-bold py-2 px-4" onclick="cerrarCaja()">🔒 CERRAR TURNO DE CAJA</button>
+                    </div>
+
+                    <hr class="my-3">
+
+                    <!-- RESUMEN DE FLUJO DE CAJA EN TIEMPO REAL -->
+                    <div class="row text-center g-3">
+                        <div class="col-md-3">
+                            <div class="p-2 border rounded bg-light">
+                                <small class="text-muted d-block">Ventas Efectivo</small>
+                                <strong class="fs-5 text-success">+${{ "%.2f"|format(ventas_efectivo) }}</strong>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="p-2 border rounded bg-light">
+                                <small class="text-muted d-block">Gastos Efectivo</small>
+                                <strong class="fs-5 text-danger">-${{ "%.2f"|format(gastos_efectivo) }}</strong>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="p-2 border rounded bg-light">
+                                <small class="text-muted d-block">Ventas Tarjeta/Transf.</small>
+                                <strong class="fs-5 text-info">${{ "%.2f"|format(ventas_tarjeta + ventas_transferencia) }}</strong>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="p-2 border rounded bg-success text-white">
+                                <small class="d-block text-white-50">Efectivo Esperado en Caja</small>
+                                <strong class="fs-4">${{ "%.2f"|format(efectivo_esperado) }}</strong>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% else %}
+                <div class="card border-warning shadow-sm p-4 text-center bg-white">
+                    <span class="badge bg-secondary mb-2 mx-auto fs-6" style="width: 150px;">CAJA CERRADA</span>
+                    <h4 class="fw-bold mb-3">No hay un turno de caja activo</h4>
+                    <div class="col-md-4 mx-auto">
+                        <input type="number" step="0.01" id="monto-apertura" class="form-control text-center mb-3" placeholder="Monto Inicial en Fondo ($)">
+                        <button class="btn btn-success fw-bold w-100 py-2" onclick="abrirCaja()">🔓 ABRIR TURNO DE CAJA</button>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- FORMULARIO NUEVO GASTO -->
+        <div class="col-md-5 mb-4">
+            <div class="card shadow-sm p-3">
+                <h4 class="card-title mb-3">💸 Registrar Gasto / Salida</h4>
+                
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Concepto / Descripción:</label>
+                    <input type="text" id="gasto-concepto" class="form-control" placeholder="Ej. Pago de factura de luz, Alquiler, Hielo">
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Categoría:</label>
+                    <select id="gasto-categoria" class="form-select">
+                        <option value="Servicios">Servicios (Luz, Agua, Internet)</option>
+                        <option value="Alquiler">Alquiler</option>
+                        <option value="Sueldos">Sueldos / Planilla</option>
+                        <option value="Insumos Menores">Insumos Menores</option>
+                        <option value="Mantenimiento">Mantenimiento</option>
+                        <option value="General" selected>General</option>
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Monto ($):</label>
+                    <input type="number" step="0.01" id="gasto-monto" class="form-control" placeholder="0.00">
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Método de Pago:</label>
+                    <select id="gasto-metodo" class="form-select">
+                        <option value="Efectivo" selected>Efectivo (Sale de Caja)</option>
+                        <option value="Tarjeta">Tarjeta / Banco</option>
+                        <option value="Transferencia">Transferencia</option>
+                    </select>
+                </div>
+
+                <button class="btn btn-danger w-100 fw-bold py-2" onclick="guardarGasto()">REGISTRAR GASTO</button>
+            </div>
+        </div>
+
+        <!-- HISTORIAL DE GASTOS -->
+        <div class="col-md-7">
+            <div class="card shadow-sm p-3">
+                <h4 class="card-title mb-3">📜 Historial de Gastos Operativos</h4>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Fecha</th>
+                                <th>Concepto</th>
+                                <th>Categoría</th>
+                                <th>Pago</th>
+                                <th>Monto</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for g in gastos %}
+                            <tr>
+                                <td class="small">{{ g.fecha.strftime('%Y-%m-%d %H:%M') }}</td>
+                                <td class="fw-bold">{{ g.concepto }}</td>
+                                <td><span class="badge bg-secondary">{{ g.categoria }}</span></td>
+                                <td><span class="badge bg-light text-dark border">{{ g.metodo_pago }}</span></td>
+                                <td class="fw-bold text-danger">-${{ "%.2f"|format(g.monto) }}</td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="5" class="text-center text-muted py-3">No hay gastos registrados.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function abrirCaja() {
+        const monto = document.getElementById('monto-apertura').value;
+        if (monto === '' || parseFloat(monto) < 0) {
+            alert("Ingresa un monto inicial válido.");
+            return;
+        }
+
+        fetch('/api/caja/abrir', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ monto_inicial: parseFloat(monto) })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message);
+                location.reload();
+            } else {
+                alert("Error: " + data.message);
+            }
+        });
+    }
+
+    function cerrarCaja() {
+        const montoConteo = prompt("Ingrese el dinero real contado en caja para el arqueo ($):");
+        if (montoConteo === null || montoConteo.trim() === '') return;
+
+        fetch('/api/caja/cerrar', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ monto_cierre_real: parseFloat(montoConteo) })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message);
+                location.reload();
+            } else {
+                alert("Error: " + data.message);
+            }
+        });
+    }
+
+    function guardarGasto() {
+        const concepto = document.getElementById('gasto-concepto').value.trim();
+        const categoria = document.getElementById('gasto-categoria').value;
+        const monto = parseFloat(document.getElementById('gasto-monto').value);
+        const metodo_pago = document.getElementById('gasto-metodo').value;
+
+        if (!concepto || isNaN(monto) || monto <= 0) {
+            alert("Por favor completa la descripción y un monto mayor a cero.");
+            return;
+        }
+
+        fetch('/api/gasto/registrar', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ concepto, categoria, monto, metodo_pago })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message);
+                location.reload();
+            } else {
+                alert("Error: " + data.message);
+            }
+        });
+    }
+</script>
+</body>
+</html>
