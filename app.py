@@ -15,8 +15,6 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
 
-with app.app_context():
-    db.create_all()
 # ==================== MODELOS (BASE DE DATOS ERP) ====================
 
 class Categoria(db.Model):
@@ -95,8 +93,6 @@ class DetalleVenta(db.Model):
     cantidad = db.Column(db.Integer, nullable=False)
     precio_unitario = db.Column(db.Float, nullable=False)
 
-# --- NUEVOS MODELOS PARA CAJA CHICA Y GASTOS ---
-
 class SesionCaja(db.Model):
     __tablename__ = 'sesion_caja'
     id = db.Column(db.Integer, primary_key=True)
@@ -104,18 +100,25 @@ class SesionCaja(db.Model):
     fecha_cierre = db.Column(db.DateTime, nullable=True)
     monto_inicial = db.Column(db.Float, default=0.0)
     monto_cierre_real = db.Column(db.Float, nullable=True)
-    estado = db.Column(db.String(20), default='Abierta')  # 'Abierta', 'Cerrada'
+    estado = db.Column(db.String(20), default='Abierta')
 
 class Gasto(db.Model):
     __tablename__ = 'gasto'
     id = db.Column(db.Integer, primary_key=True)
     fecha = db.Column(db.DateTime, default=datetime.utcnow)
     concepto = db.Column(db.String(150), nullable=False)
-    categoria = db.Column(db.String(50), default='General')  # Servicios, Sueldos, Alquiler, Mantenimiento, etc.
+    categoria = db.Column(db.String(50), default='General')
     monto = db.Column(db.Float, nullable=False)
     metodo_pago = db.Column(db.String(20), default='Efectivo')
 
-# ==================== RUTAS VISTAS Y POS ====================
+# Crear automáticamente todas las tablas al iniciar
+with app.app_context():
+    try:
+        db.create_all()
+    except Exception as e:
+        print("Error en db.create_all():", e)
+
+# ==================== RUTAS POS Y NAVEGACIÓN ====================
 
 @app.route('/')
 def index():
@@ -357,53 +360,52 @@ def registrar_compra():
         db.session.rollback()
         return jsonify({"success": False, "message": str(e)}), 500
 
-# ==================== MÓDULO CAJA CHICA Y GASTOS ====================
+# ==================== MÓDULO CAJA CHICA Y GASTOS (CORREGIDO) ====================
 
 @app.route('/caja')
 def gestionar_caja():
-    # Asegurar que las tablas existan al entrar a la vista
     try:
-        db.create_all()
-    except Exception as e:
-        print("Error al crear tablas:", e)
+        sesion_activa = SesionCaja.query.filter_by(estado='Abierta').order_by(SesionCaja.id.desc()).first()
+        gastos = Gasto.query.order_by(Gasto.fecha.desc()).all() or []
 
-    sesion_activa = SesionCaja.query.filter_by(estado='Abierta').order_by(SesionCaja.id.desc()).first()
-    gastos = Gasto.query.order_by(Gasto.fecha.desc()).all()
+        ventas_efectivo = 0.0
+        ventas_tarjeta = 0.0
+        ventas_transferencia = 0.0
+        gastos_efectivo = 0.0
 
-    ventas_efectivo = 0.0
-    ventas_tarjeta = 0.0
-    ventas_transferencia = 0.0
-    gastos_efectivo = 0.0
-
-    if sesion_activa:
-        # Filtrar ventas desde la apertura
-        if sesion_activa.fecha_apertura:
-            ventas_caja = Venta.query.filter(Venta.fecha >= sesion_activa.fecha_apertura).all()
+        if sesion_activa and sesion_activa.fecha_apertura:
+            ventas_caja = Venta.query.filter(Venta.fecha >= sesion_activa.fecha_apertura).all() or []
             for v in ventas_caja:
+                monto_v = float(v.total) if v.total else 0.0
                 if v.metodo_pago == 'Efectivo':
-                    ventas_efectivo += (v.total or 0.0)
+                    ventas_efectivo += monto_v
                 elif v.metodo_pago == 'Tarjeta':
-                    ventas_tarjeta += (v.total or 0.0)
+                    ventas_tarjeta += monto_v
                 elif v.metodo_pago == 'Transferencia':
-                    ventas_transferencia += (v.total or 0.0)
+                    ventas_transferencia += monto_v
 
-            gastos_caja = Gasto.query.filter(Gasto.fecha >= sesion_activa.fecha_apertura).all()
+            gastos_caja = Gasto.query.filter(Gasto.fecha >= sesion_activa.fecha_apertura).all() or []
             for g in gastos_caja:
+                monto_g = float(g.monto) if g.monto else 0.0
                 if g.metodo_pago == 'Efectivo':
-                    gastos_efectivo += (g.monto or 0.0)
+                    gastos_efectivo += monto_g
 
-        efectivo_esperado = (sesion_activa.monto_inicial or 0.0) + ventas_efectivo - gastos_efectivo
-    else:
-        efectivo_esperado = 0.0
+            monto_ini = float(sesion_activa.monto_inicial) if sesion_activa.monto_inicial else 0.0
+            efectivo_esperado = monto_ini + ventas_efectivo - gastos_efectivo
+        else:
+            efectivo_esperado = 0.0
 
-    return render_template('caja.html', 
-                           sesion=sesion_activa, 
-                           gastos=gastos,
-                           ventas_efectivo=ventas_efectivo,
-                           ventas_tarjeta=ventas_tarjeta,
-                           ventas_transferencia=ventas_transferencia,
-                           gastos_efectivo=gastos_efectivo,
-                           efectivo_esperado=efectivo_esperado)
+        return render_template('caja.html', 
+                               sesion=sesion_activa, 
+                               gastos=gastos,
+                               ventas_efectivo=ventas_efectivo,
+                               ventas_tarjeta=ventas_tarjeta,
+                               ventas_transferencia=ventas_transferencia,
+                               gastos_efectivo=gastos_efectivo,
+                               efectivo_esperado=efectivo_esperado)
+    except Exception as e:
+        print("Error en ruta /caja:", e)
+        return f"<h3>Error interno al cargar la vista de caja: {str(e)}</h3>", 500
 
 @app.route('/api/caja/abrir', methods=['POST'])
 def abrir_caja():
@@ -467,9 +469,6 @@ def registrar_gasto():
     except Exception as e:
         db.session.rollback()
         return jsonify({"success": False, "message": str(e)}), 500
-
-with app.app_context():
-    db.create_all()
 
 if __name__ == '__main__':
     app.run(debug=True)
