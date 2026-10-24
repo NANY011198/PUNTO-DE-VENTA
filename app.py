@@ -361,6 +361,12 @@ def registrar_compra():
 
 @app.route('/caja')
 def gestionar_caja():
+    # Asegurar que las tablas existan al entrar a la vista
+    try:
+        db.create_all()
+    except Exception as e:
+        print("Error al crear tablas:", e)
+
     sesion_activa = SesionCaja.query.filter_by(estado='Abierta').order_by(SesionCaja.id.desc()).first()
     gastos = Gasto.query.order_by(Gasto.fecha.desc()).all()
 
@@ -370,23 +376,25 @@ def gestionar_caja():
     gastos_efectivo = 0.0
 
     if sesion_activa:
-        # Calcular ventas desde la fecha de apertura de caja
-        ventas_caja = Venta.query.filter(Venta.fecha >= sesion_activa.fecha_apertura).all()
-        for v in ventas_caja:
-            if v.metodo_pago == 'Efectivo':
-                ventas_efectivo += v.total
-            elif v.metodo_pago == 'Tarjeta':
-                ventas_tarjeta += v.total
-            elif v.metodo_pago == 'Transferencia':
-                ventas_transferencia += v.total
+        # Filtrar ventas desde la apertura
+        if sesion_activa.fecha_apertura:
+            ventas_caja = Venta.query.filter(Venta.fecha >= sesion_activa.fecha_apertura).all()
+            for v in ventas_caja:
+                if v.metodo_pago == 'Efectivo':
+                    ventas_efectivo += (v.total or 0.0)
+                elif v.metodo_pago == 'Tarjeta':
+                    ventas_tarjeta += (v.total or 0.0)
+                elif v.metodo_pago == 'Transferencia':
+                    ventas_transferencia += (v.total or 0.0)
 
-        # Calcular gastos en efectivo desde apertura de caja
-        gastos_caja = Gasto.query.filter(Gasto.fecha >= sesion_activa.fecha_apertura).all()
-        for g in gastos_caja:
-            if g.metodo_pago == 'Efectivo':
-                gastos_efectivo += g.monto
+            gastos_caja = Gasto.query.filter(Gasto.fecha >= sesion_activa.fecha_apertura).all()
+            for g in gastos_caja:
+                if g.metodo_pago == 'Efectivo':
+                    gastos_efectivo += (g.monto or 0.0)
 
-    efectivo_esperado = (sesion_activa.monto_inicial + ventas_efectivo - gastos_efectivo) if sesion_activa else 0.0
+        efectivo_esperado = (sesion_activa.monto_inicial or 0.0) + ventas_efectivo - gastos_efectivo
+    else:
+        efectivo_esperado = 0.0
 
     return render_template('caja.html', 
                            sesion=sesion_activa, 
