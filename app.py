@@ -76,8 +76,8 @@ class DetalleCompra(db.Model):
     producto_id = db.Column(db.Integer, db.ForeignKey('producto.id'), nullable=False)
     cantidad = db.Column(db.Float, nullable=False)
     precio_unitario = db.Column(db.Float, nullable=False)
+    subtotal = db.Column(db.Float, nullable=True) # <--- NUEVA COLUMNA
     producto = db.relationship('Producto')
-
 class Venta(db.Model):
     __tablename__ = 'venta'
     id = db.Column(db.Integer, primary_key=True)
@@ -122,6 +122,7 @@ with app.app_context():
             conn.execute(text("ALTER TABLE gasto ADD COLUMN IF NOT EXISTS categoria VARCHAR(50) DEFAULT 'General';"))
             conn.execute(text("ALTER TABLE gasto ADD COLUMN IF NOT EXISTS metodo_pago VARCHAR(20) DEFAULT 'Efectivo';"))
             conn.execute(text("ALTER TABLE producto ADD COLUMN IF NOT EXISTS stock_minimo FLOAT DEFAULT 10.0;"))
+            conn.execute(text("ALTER TABLE detalle_compra ADD COLUMN IF NOT EXISTS subtotal FLOAT DEFAULT 0.0;")) # <--- MIGRACIÓN
             conn.commit()
     except Exception as e:
         print("Error en inicialización/migración de base de datos:", e)
@@ -396,14 +397,15 @@ def registrar_compra():
             producto = Producto.query.get(item['producto_id'])
             cantidad = float(item['cantidad'])
             precio = float(item['precio_unitario'])
-            subtotal = cantidad * precio
-            monto_total += subtotal
+            subtotal_item = cantidad * precio
+            monto_total += subtotal_item
 
             detalle = DetalleCompra(
                 compra_id=nueva_compra.id,
                 producto_id=producto.id,
                 cantidad=cantidad,
-                precio_unitario=precio
+                precio_unitario=precio,
+                subtotal=subtotal_item
             )
             db.session.add(detalle)
             producto.stock += cantidad
