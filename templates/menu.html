@@ -5,6 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gestión de Menú y Recetas</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .fila-platillo { cursor: pointer; transition: background-color 0.15s ease-in-out; }
+        .fila-platillo:hover { background-color: #f1f5f9 !important; }
+    </style>
 </head>
 <body class="bg-light">
 <div class="container py-4">
@@ -17,20 +21,19 @@
     </div>
 
     <div class="row">
-        <!-- FORMULARIO PLATILLO Y RECETA -->
-        <div class="col-md-5">
-            <div class="card shadow-sm p-3 mb-4">
-                <h4 class="card-title mb-3" id="form-titulo">➕ Nuevo Platillo</h4>
-                <input type="hidden" id="platillo-id" value="">
+        <!-- FORMULARIO CREAR NUEVO PLATILLO -->
+        <div class="col-md-5 mb-4">
+            <div class="card shadow-sm p-3">
+                <h4 class="card-title mb-3 text-primary">➕ Nuevo Platillo</h4>
                 
                 <div class="mb-3">
                     <label class="form-label fw-bold">Nombre del Platillo:</label>
-                    <input type="text" id="nombre-platillo" class="form-control" placeholder="Ej. Pizza Margarita">
+                    <input type="text" id="nuevo-nombre" class="form-control" placeholder="Ej. Pizza Margarita">
                 </div>
 
                 <div class="mb-3">
                     <label class="form-label fw-bold">Categoría:</label>
-                    <select id="categoria-platillo" class="form-select">
+                    <select id="nuevo-categoria" class="form-select">
                         {% for cat in categorias %}
                             <option value="{{ cat.id }}">{{ cat.nombre }}</option>
                         {% endfor %}
@@ -39,45 +42,45 @@
 
                 <div class="mb-3">
                     <label class="form-label fw-bold">Precio de Venta ($):</label>
-                    <input type="number" step="0.01" id="precio-platillo" class="form-control" placeholder="0.00">
+                    <input type="number" step="0.01" id="nuevo-precio" class="form-control" placeholder="0.00">
                 </div>
 
                 <hr>
-                <h5 class="fw-bold">🧪 Receta / Ingredientes (Insumos)</h5>
-                <p class="small text-muted">Escribe para buscar e ir seleccionando rápidamente el insumo.</p>
+                <h5 class="fw-bold mb-2">🧪 Receta / Ingredientes (Insumos)</h5>
+                <p class="text-muted small">Selecciona un insumo e ingresa la cantidad que descuenta por venta.</p>
 
                 <div class="row g-2 mb-2">
-                    <div class="col-7">
-                        <input list="lista-insumos-options" id="input-insumo" class="form-control form-control-sm" placeholder="Escribe insumo...">
-                        <datalist id="lista-insumos-options">
+                    <div class="col-6">
+                        <select id="nuevo-insumo-select" class="form-select form-select-sm">
+                            <option value="" selected disabled>Seleccionar insumo...</option>
                             {% for ins in insumos %}
-                                <option data-id="{{ ins.id }}" data-nombre="{{ ins.nombre }}" data-unidad="{{ ins.unidad }}" value="{{ ins.nombre }} ({{ ins.unidad }})">
+                                <option value="{{ ins.id }}" data-nombre="{{ ins.nombre }}" data-unidad="{{ ins.unidad }}">{{ ins.nombre }} ({{ ins.unidad }})</option>
                             {% endfor %}
-                        </datalist>
+                        </select>
                     </div>
-                    <div class="col-3">
-                        <input type="number" step="0.1" id="cant-insumo" class="form-control form-control-sm" placeholder="Cant.">
+                    <div class="col-4">
+                        <input type="number" step="0.01" id="nuevo-insumo-cant" class="form-control form-control-sm" placeholder="Cant.">
                     </div>
                     <div class="col-2">
-                        <button class="btn btn-sm btn-success w-100 fw-bold" onclick="agregarIngrediente()">+</button>
+                        <button class="btn btn-sm btn-success w-100 fw-bold" onclick="agregarIngredienteNuevo()">+</button>
                     </div>
                 </div>
 
-                <ul id="lista-ingredientes" class="list-group list-group-flush mb-3 small">
-                    <li class="list-group-item text-muted text-center" id="empty-ing">Sin ingredientes asignados</li>
+                <ul class="list-group list-group-flush mb-3 border rounded p-2 bg-white" id="lista-ingredientes-nuevo" style="min-height: 80px; max-height: 180px; overflow-y: auto;">
+                    <li class="list-group-item text-muted small text-center py-3">Sin ingredientes asignados</li>
                 </ul>
 
-                <div class="d-flex gap-2">
-                    <button class="btn btn-primary flex-fill fw-bold py-2" id="btn-guardar" onclick="guardarPlatillo()">GUARDAR PLATILLO</button>
-                    <button class="btn btn-secondary py-2 d-none" id="btn-cancelar" onclick="limpiarFormulario()">Cancelar</button>
-                </div>
+                <button class="btn btn-primary w-100 fw-bold py-2" onclick="guardarNuevoPlatillo()">GUARDAR PLATILLO</button>
             </div>
         </div>
 
-        <!-- LISTA DE PLATILLOS EXISTENTES -->
-        <div class="col-md-7">
+        <!-- TABLA PLATILLOS REGISTRADOS -->
+        <div class="col-md-7 mb-4">
             <div class="card shadow-sm p-3">
-                <h4 class="card-title mb-3">📋 Platillos Registrados</h4>
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h4 class="card-title mb-0">📋 Platillos Registrados</h4>
+                    <small class="text-muted">Haz clic en un platillo para ver o editar</small>
+                </div>
                 <div class="table-responsive">
                     <table class="table table-hover align-middle">
                         <thead class="table-dark">
@@ -86,36 +89,25 @@
                                 <th>Categoría</th>
                                 <th>Precio</th>
                                 <th>Receta</th>
-                                <th class="text-center">Acciones</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for p in platillos %}
-                            <tr>
-                                <td class="fw-bold">{{ p.nombre }}</td>
-                                <td><span class="badge bg-secondary">{{ p.categoria.nombre }}</span></td>
-                                <td>${{ "%.2f"|format(p.precio) }}</td>
+                            <tr class="fila-platillo" onclick="abrirModalDetalle({{ p.id }})">
+                                <td class="fw-bold text-primary">{{ p.nombre }}</td>
+                                <td><span class="badge bg-secondary">{{ p.categoria.nombre if p.categoria else 'N/A' }}</span></td>
+                                <td class="fw-bold text-success">${{ "%.2f"|format(p.precio or 0) }}</td>
                                 <td>
-                                    {% if p.receta %}
-                                        <ul class="mb-0 ps-3 small text-muted">
-                                            {% for r in p.receta %}
-                                                <li>{{ r.producto.nombre }}: {{ r.cantidad_requerida }} {{ r.producto.unidad }}</li>
-                                            {% endfor %}
-                                        </ul>
+                                    {% if p.receta and p.receta|length > 0 %}
+                                        <span class="badge bg-success">✅ Con Receta ({{ p.receta|length }} insumos)</span>
                                     {% else %}
-                                        <span class="small text-muted">Directo / Sin receta</span>
+                                        <span class="badge bg-light text-dark border">🔹 Directo / Sin receta</span>
                                     {% endif %}
-                                </td>
-                                <td class="text-center">
-                                    <div class="btn-group btn-group-sm">
-                                        <button class="btn btn-outline-warning" title="Editar" onclick="editarPlatillo({{ p.id }})">✏️</button>
-                                        <button class="btn btn-outline-danger" title="Eliminar" onclick="eliminarPlatillo({{ p.id }}, '{{ p.nombre }}')">🗑️</button>
-                                    </div>
                                 </td>
                             </tr>
                             {% else %}
                             <tr>
-                                <td colspan="5" class="text-center text-muted py-3">No hay platillos registrados.</td>
+                                <td colspan="4" class="text-center text-muted py-4">No hay platillos registrados en el menú.</td>
                             </tr>
                             {% endfor %}
                         </tbody>
@@ -126,106 +118,143 @@
     </div>
 </div>
 
+<!-- MODAL EDITAR Y DETALLE DE PLATILLO -->
+<div class="modal fade" id="modalEditar" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">✏️ Detalle y Edición de Platillo</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="edit-id">
+                
+                <div class="row mb-3">
+                    <div class="col-md-6 mb-2">
+                        <label class="form-label fw-bold">Nombre del Platillo:</label>
+                        <input type="text" id="edit-nombre" class="form-control">
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <label class="form-label fw-bold">Categoría:</label>
+                        <select id="edit-categoria" class="form-select">
+                            {% for cat in categorias %}
+                                <option value="{{ cat.id }}">{{ cat.nombre }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <label class="form-label fw-bold">Precio ($):</label>
+                        <input type="number" step="0.01" id="edit-precio" class="form-control">
+                    </div>
+                </div>
+
+                <hr>
+                <h5 class="fw-bold mb-2">🧪 Ingredientes de la Receta</h5>
+                
+                <div class="row g-2 mb-3">
+                    <div class="col-6">
+                        <select id="edit-insumo-select" class="form-select">
+                            <option value="" selected disabled>Agregar un insumo...</option>
+                            {% for ins in insumos %}
+                                <option value="{{ ins.id }}" data-nombre="{{ ins.nombre }}" data-unidad="{{ ins.unidad }}">{{ ins.nombre }} ({{ ins.unidad }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-4">
+                        <input type="number" step="0.01" id="edit-insumo-cant" class="form-control" placeholder="Cantidad">
+                    </div>
+                    <div class="col-2">
+                        <button class="btn btn-success w-100 fw-bold" onclick="agregarIngredienteEdit()">+ Agregar</button>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Insumo / Ingrediente</th>
+                                <th>Cantidad Requerida</th>
+                                <th>Unidad</th>
+                                <th class="text-center" style="width: 80px;">Quitar</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabla-ingredientes-edit">
+                            <tr>
+                                <td colspan="4" class="text-center text-muted">Sin ingredientes asignados</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer justify-content-between">
+                <button type="button" class="btn btn-outline-danger fw-bold" onclick="eliminarPlatilloActual()">🗑️ Eliminar Platillo</button>
+                <div>
+                    <button type="button" class="btn btn-secondary me-2" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary fw-bold" onclick="guardarEdicionPlatillo()">Guardar Cambios</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-    let ingredientes = [];
+    let modalEditarBs;
+    let ingredientesNuevo = [];
+    let ingredientesEdit = [];
 
-    function agregarIngrediente() {
-        const inputInsumo = document.getElementById('input-insumo');
-        const cantInput = document.getElementById('cant-insumo');
-        const val = inputInsumo.value;
-        const cantidad = parseFloat(cantInput.value);
+    document.addEventListener('DOMContentLoaded', () => {
+        modalEditarBs = new bootstrap.Modal(document.getElementById('modalEditar'));
+    });
 
-        const datalist = document.getElementById('lista-insumos-options');
-        let productoId = null, nombre = '', unidad = '';
+    // --- LÓGICA PARA NUEVO PLATILLO ---
+    function agregarIngredienteNuevo() {
+        const select = document.getElementById('nuevo-insumo-select');
+        const id = select.value;
+        const nombre = select.options[select.selectedIndex]?.getAttribute('data-nombre');
+        const unidad = select.options[select.selectedIndex]?.getAttribute('data-unidad');
+        const cant = parseFloat(document.getElementById('nuevo-insumo-cant').value);
 
-        for (let opt of datalist.options) {
-            if (opt.value === val) {
-                productoId = opt.getAttribute('data-id');
-                nombre = opt.getAttribute('data-nombre');
-                unidad = opt.getAttribute('data-unidad');
-                break;
-            }
-        }
-
-        if (!productoId || isNaN(cantidad) || cantidad <= 0) {
-            alert("Escribe un insumo válido de la lista e ingresa una cantidad.");
+        if (!id || isNaN(cant) || cant <= 0) {
+            alert("Selecciona un insumo e ingresa una cantidad válida.");
             return;
         }
 
-        const exist = ingredientes.find(i => i.producto_id == productoId);
-        if (exist) {
-            exist.cantidad += cantidad;
-        } else {
-            ingredientes.push({ producto_id: productoId, nombre, cantidad, unidad });
-        }
-        
-        cantInput.value = '';
-        inputInsumo.value = '';
-        renderIngredientes();
+        ingredientesNuevo.push({ producto_id: id, nombre, unidad, cantidad: cant });
+        document.getElementById('nuevo-insumo-cant').value = '';
+        select.value = '';
+        renderIngredientesNuevo();
     }
 
-    function renderIngredientes() {
-        const lista = document.getElementById('lista-ingredientes');
-        lista.innerHTML = '';
+    function quitarIngredienteNuevo(index) {
+        ingredientesNuevo.splice(index, 1);
+        renderIngredientesNuevo();
+    }
 
-        if (ingredientes.length === 0) {
-            lista.innerHTML = '<li class="list-group-item text-muted text-center" id="empty-ing">Sin ingredientes asignados</li>';
+    function renderIngredientesNuevo() {
+        const ul = document.getElementById('lista-ingredientes-nuevo');
+        ul.innerHTML = '';
+        if (ingredientesNuevo.length === 0) {
+            ul.innerHTML = '<li class="list-group-item text-muted small text-center py-3">Sin ingredientes asignados</li>';
             return;
         }
-
-        ingredientes.forEach((ing, index) => {
-            lista.innerHTML += `
-                <li class="list-group-item d-flex justify-content-between align-items-center py-1">
-                    <span>${ing.nombre}: <strong>${ing.cantidad} ${ing.unidad}</strong></span>
-                    <button class="btn btn-sm btn-outline-danger py-0 px-2" onclick="eliminarIngrediente(${index})">×</button>
+        ingredientesNuevo.forEach((ing, i) => {
+            ul.innerHTML += `
+                <li class="list-group-item d-flex justify-content-between align-items-center py-1 px-2 small">
+                    <span><strong>${ing.nombre}</strong>: ${ing.cantidad} ${ing.unidad}</span>
+                    <button class="btn btn-sm btn-outline-danger py-0 px-1" onclick="quitarIngredienteNuevo(${i})">×</button>
                 </li>
             `;
         });
     }
 
-    function eliminarIngrediente(index) {
-        ingredientes.splice(index, 1);
-        renderIngredientes();
-    }
+    function guardarNuevoPlatillo() {
+        const nombre = document.getElementById('nuevo-nombre').value.trim();
+        const categoria_id = document.getElementById('nuevo-categoria').value;
+        const precio = parseFloat(document.getElementById('nuevo-precio').value);
 
-    function editarPlatillo(id) {
-        fetch(`/api/platillo/obtener/${id}`)
-            .then(res => res.json())
-            .then(data => {
-                document.getElementById('platillo-id').value = data.id;
-                document.getElementById('nombre-platillo').value = data.nombre;
-                document.getElementById('precio-platillo').value = data.precio;
-                document.getElementById('categoria-platillo').value = data.categoria_id;
-                
-                ingredientes = data.ingredientes;
-                renderIngredientes();
-
-                document.getElementById('form-titulo').innerText = '✏️ Editar Platillo';
-                document.getElementById('btn-guardar').innerText = 'ACTUALIZAR PLATILLO';
-                document.getElementById('btn-cancelar').classList.remove('d-none');
-            });
-    }
-
-    function limpiarFormulario() {
-        document.getElementById('platillo-id').value = '';
-        document.getElementById('nombre-platillo').value = '';
-        document.getElementById('precio-platillo').value = '';
-        ingredientes = [];
-        renderIngredientes();
-
-        document.getElementById('form-titulo').innerText = '➕ Nuevo Platillo';
-        document.getElementById('btn-guardar').innerText = 'GUARDAR PLATILLO';
-        document.getElementById('btn-cancelar').classList.add('d-none');
-    }
-
-    function guardarPlatillo() {
-        const id = document.getElementById('platillo-id').value;
-        const nombre = document.getElementById('nombre-platillo').value.trim();
-        const categoria_id = document.getElementById('categoria-platillo').value;
-        const precio = document.getElementById('precio-platillo').value;
-
-        if (!nombre || !precio) {
-            alert("Por favor completa el nombre y el precio.");
+        if (!nombre || isNaN(precio) || precio < 0) {
+            alert("Ingresa un nombre y precio válidos.");
             return;
         }
 
@@ -233,37 +262,128 @@
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                id: id ? parseInt(id) : null,
-                nombre: nombre,
-                categoria_id: categoria_id,
-                precio: precio,
-                ingredientes: ingredientes
+                nombre,
+                categoria_id: parseInt(categoria_id),
+                precio,
+                ingredientes: ingredientesNuevo
             })
         })
         .then(res => res.json())
         .then(data => {
-            if (data.success) {
-                alert(data.message);
-                location.reload();
-            } else {
-                alert("Error: " + data.message);
-            }
+            alert(data.message);
+            if (data.success) location.reload();
         });
     }
 
-    function eliminarPlatillo(id, nombre) {
-        if (confirm(`¿Estás seguro de que deseas eliminar el platillo "${nombre}" y su receta?`)) {
-            fetch(`/api/platillo/eliminar/${id}`, { method: 'DELETE' })
-                .then(res => res.json())
-                .then(data => {
-                    if (data.success) {
-                        alert(data.message);
-                        location.reload();
-                    } else {
-                        alert("Error: " + data.message);
-                    }
-                });
+    // --- LÓGICA PARA VER Y EDITAR PLATILLO ---
+    function abrirModalDetalle(id) {
+        fetch(`/api/platillo/obtener/${id}`)
+        .then(res => res.json())
+        .then(data => {
+            document.getElementById('edit-id').value = data.id;
+            document.getElementById('edit-nombre').value = data.nombre;
+            document.getElementById('edit-categoria').value = data.categoria_id;
+            document.getElementById('edit-precio').value = data.precio;
+
+            ingredientesEdit = data.ingredientes.map(i => ({
+                producto_id: i.producto_id,
+                nombre: i.nombre,
+                unidad: i.unidad,
+                cantidad: i.cantidad
+            }));
+
+            renderIngredientesEdit();
+            modalEditarBs.show();
+        });
+    }
+
+    function agregarIngredienteEdit() {
+        const select = document.getElementById('edit-insumo-select');
+        const id = select.value;
+        const nombre = select.options[select.selectedIndex]?.getAttribute('data-nombre');
+        const unidad = select.options[select.selectedIndex]?.getAttribute('data-unidad');
+        const cant = parseFloat(document.getElementById('edit-insumo-cant').value);
+
+        if (!id || isNaN(cant) || cant <= 0) {
+            alert("Selecciona un insumo e ingresa una cantidad válida.");
+            return;
         }
+
+        ingredientesEdit.push({ producto_id: id, nombre, unidad, cantidad: cant });
+        document.getElementById('edit-insumo-cant').value = '';
+        select.value = '';
+        renderIngredientesEdit();
+    }
+
+    function quitarIngredienteEdit(index) {
+        ingredientesEdit.splice(index, 1);
+        renderIngredientesEdit();
+    }
+
+    function renderIngredientesEdit() {
+        const tbody = document.getElementById('tabla-ingredientes-edit');
+        tbody.innerHTML = '';
+
+        if (ingredientesEdit.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-3">Sin ingredientes asignados (Platillo directo)</td></tr>';
+            return;
+        }
+
+        ingredientesEdit.forEach((ing, i) => {
+            tbody.innerHTML += `
+                <tr>
+                    <td class="fw-bold">${ing.nombre}</td>
+                    <td>${ing.cantidad}</td>
+                    <td><span class="badge bg-secondary">${ing.unidad}</span></td>
+                    <td class="text-center">
+                        <button class="btn btn-sm btn-outline-danger py-0" onclick="quitarIngredienteEdit(${i})">🗑️</button>
+                    </td>
+                </tr>
+            `;
+        });
+    }
+
+    function guardarEdicionPlatillo() {
+        const id = document.getElementById('edit-id').value;
+        const nombre = document.getElementById('edit-nombre').value.trim();
+        const categoria_id = document.getElementById('edit-categoria').value;
+        const precio = parseFloat(document.getElementById('edit-precio').value);
+
+        if (!nombre || isNaN(precio) || precio < 0) {
+            alert("Ingresa un nombre y precio válidos.");
+            return;
+        }
+
+        fetch('/api/platillo/guardar', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                id: parseInt(id),
+                nombre,
+                categoria_id: parseInt(categoria_id),
+                precio,
+                ingredientes: ingredientesEdit
+            })
+        })
+        .then(res => res.json())
+        .then(data => {
+            alert(data.message);
+            if (data.success) location.reload();
+        });
+    }
+
+    function eliminarPlatilloActual() {
+        const id = document.getElementById('edit-id').value;
+        const nombre = document.getElementById('edit-nombre').value;
+
+        if (!confirm(`¿Estás seguro de eliminar el platillo "${nombre}" del menú?`)) return;
+
+        fetch(`/api/platillo/eliminar/${id}`, { method: 'DELETE' })
+        .then(res => res.json())
+        .then(data => {
+            alert(data.message);
+            if (data.success) location.reload();
+        });
     }
 </script>
 </body>
