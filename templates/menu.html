@@ -10,7 +10,10 @@
 <div class="container py-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2>🍽️ Gestión de Menú y Recetas</h2>
-        <a href="/" class="btn btn-outline-primary">← Volver al POS</a>
+        <div>
+            <a href="/inventario" class="btn btn-outline-secondary me-2">📦 Crear / Ver Insumos</a>
+            <a href="/" class="btn btn-outline-primary">← Volver al POS</a>
+        </div>
     </div>
 
     <div class="row">
@@ -41,18 +44,16 @@
 
                 <hr>
                 <h5 class="fw-bold">🧪 Receta / Ingredientes (Insumos)</h5>
-                <p class="small text-muted">Añade o modifica los insumos que se descontarán del stock.</p>
+                <p class="small text-muted">Escribe para buscar e ir seleccionando rápidamente el insumo.</p>
 
                 <div class="row g-2 mb-2">
                     <div class="col-7">
-                        <select id="select-insumo" class="form-select form-select-sm">
-                            <option value="">-- Seleccionar Insumo --</option>
+                        <input list="lista-insumos-options" id="input-insumo" class="form-control form-control-sm" placeholder="Escribe insumo...">
+                        <datalist id="lista-insumos-options">
                             {% for ins in insumos %}
-                                <option value="{{ ins.id }}" data-nombre="{{ ins.nombre }}" data-unidad="{{ ins.unidad }}">
-                                    {{ ins.nombre }} ({{ ins.unidad }})
-                                </option>
+                                <option data-id="{{ ins.id }}" data-nombre="{{ ins.nombre }}" data-unidad="{{ ins.unidad }}" value="{{ ins.nombre }} ({{ ins.unidad }})">
                             {% endfor %}
-                        </select>
+                        </datalist>
                     </div>
                     <div class="col-3">
                         <input type="number" step="0.1" id="cant-insumo" class="form-control form-control-sm" placeholder="Cant.">
@@ -62,7 +63,6 @@
                     </div>
                 </div>
 
-                <!-- Lista de Ingredientes Agregados -->
                 <ul id="lista-ingredientes" class="list-group list-group-flush mb-3 small">
                     <li class="list-group-item text-muted text-center" id="empty-ing">Sin ingredientes asignados</li>
                 </ul>
@@ -130,20 +130,27 @@
     let ingredientes = [];
 
     function agregarIngrediente() {
-        const select = document.getElementById('select-insumo');
+        const inputInsumo = document.getElementById('input-insumo');
         const cantInput = document.getElementById('cant-insumo');
-
-        const productoId = select.value;
+        const val = inputInsumo.value;
         const cantidad = parseFloat(cantInput.value);
 
-        if (!productoId || isNaN(cantidad) || cantidad <= 0) {
-            alert("Selecciona un insumo e ingresa una cantidad válida.");
-            return;
+        const datalist = document.getElementById('lista-insumos-options');
+        let productoId = null, nombre = '', unidad = '';
+
+        for (let opt of datalist.options) {
+            if (opt.value === val) {
+                productoId = opt.getAttribute('data-id');
+                nombre = opt.getAttribute('data-nombre');
+                unidad = opt.getAttribute('data-unidad');
+                break;
+            }
         }
 
-        const option = select.options[select.selectedIndex];
-        const nombre = option.getAttribute('data-nombre');
-        const unidad = option.getAttribute('data-unidad');
+        if (!productoId || isNaN(cantidad) || cantidad <= 0) {
+            alert("Escribe un insumo válido de la lista e ingresa una cantidad.");
+            return;
+        }
 
         const exist = ingredientes.find(i => i.producto_id == productoId);
         if (exist) {
@@ -153,7 +160,7 @@
         }
         
         cantInput.value = '';
-        select.value = '';
+        inputInsumo.value = '';
         renderIngredientes();
     }
 

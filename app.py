@@ -26,7 +26,7 @@ class Categoria(db.Model):
 class Producto(db.Model):
     __tablename__ = 'producto'
     id = db.Column(db.Integer, primary_key=True)
-    nombre = db.Column(db.String(100), nullable=False)
+    nombre = db.Column(db.String(100), nullable=False, unique=True)
     unidad = db.Column(db.String(20), default='Unidad')
     stock = db.Column(db.Float, default=0.0)
     precio_venta = db.Column(db.Float, nullable=True)
@@ -160,6 +160,31 @@ def ver_inventario():
     productos = Producto.query.all()
     return render_template('inventario.html', productos=productos)
 
+# ==================== API MÓDULO INSUMOS / PRODUCTOS ====================
+
+@app.route('/api/producto/crear', methods=['POST'])
+def crear_producto():
+    try:
+        data = request.get_json()
+        nombre = data.get('nombre', '').strip()
+        unidad = data.get('unidad', 'Unidad').strip()
+        stock_inicial = float(data.get('stock_inicial', 0.0))
+
+        if not nombre:
+            return jsonify({"success": False, "message": "El nombre del insumo es obligatorio."}), 400
+
+        existente = Producto.query.filter(Producto.nombre.ilike(nombre)).first()
+        if existente:
+            return jsonify({"success": False, "message": f"El insumo '{nombre}' ya existe."}), 400
+
+        nuevo_prod = Producto(nombre=nombre, unidad=unidad, stock=stock_inicial)
+        db.session.add(nuevo_prod)
+        db.session.commit()
+        return jsonify({"success": True, "message": f"Insumo '{nombre}' creado exitosamente."})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"success": False, "message": str(e)}), 500
+
 # ==================== MÓDULO MENÚ Y RECETAS ====================
 
 @app.route('/menu')
@@ -276,7 +301,7 @@ def registrar_compra():
         data = request.get_json()
         proveedor_id = int(data.get('proveedor_id'))
         numero_factura = data.get('numero_factura')
-        items = data.get('items', [])  # {producto_id, cantidad, precio_unitario}
+        items = data.get('items', [])
 
         if not items:
             return jsonify({"success": False, "message": "Debe agregar al menos un insumo a la compra."}), 400
@@ -305,7 +330,6 @@ def registrar_compra():
             )
             db.session.add(detalle)
 
-            # AUMENTAR STOCK EN INVENTARIO AUTOMÁTICAMENTE
             producto.stock += cantidad
 
         nueva_compra.monto_total = monto_total

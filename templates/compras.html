@@ -10,11 +10,14 @@
 <div class="container py-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2>🚚 Compras y Gestión de Proveedores</h2>
-        <a href="/" class="btn btn-outline-primary">← Volver al POS</a>
+        <div>
+            <a href="/inventario" class="btn btn-outline-secondary me-2">📦 Crear / Ver Insumos</a>
+            <a href="/" class="btn btn-outline-primary">← Volver al POS</a>
+        </div>
     </div>
 
     <div class="row">
-        <!-- MODAL / FORMULARIO REGISTRAR PROVEEDOR Y COMPRA -->
+        <!-- FORMULARIO REGISTRAR PROVEEDOR Y COMPRA -->
         <div class="col-md-5">
             <!-- REGISTRO RÁPIDO DE PROVEEDOR -->
             <div class="card shadow-sm p-3 mb-4">
@@ -54,17 +57,16 @@
 
                 <hr>
                 <h5 class="fw-bold">🛒 Ítems Comprados (Incrementan Stock)</h5>
+                <p class="small text-muted">Escribe el nombre del insumo para buscarlo dinámicamente.</p>
 
                 <div class="row g-2 mb-2">
                     <div class="col-5">
-                        <select id="select-insumo-compra" class="form-select form-select-sm">
-                            <option value="">-- Insumo --</option>
+                        <input list="lista-insumos-compra-opt" id="input-insumo-compra" class="form-control form-control-sm" placeholder="Buscar insumo...">
+                        <datalist id="lista-insumos-compra-opt">
                             {% for ins in insumos %}
-                                <option value="{{ ins.id }}" data-nombre="{{ ins.nombre }}" data-unidad="{{ ins.unidad }}">
-                                    {{ ins.nombre }} ({{ ins.unidad }})
-                                </option>
+                                <option data-id="{{ ins.id }}" data-nombre="{{ ins.nombre }}" data-unidad="{{ ins.unidad }}" value="{{ ins.nombre }} ({{ ins.unidad }})">
                             {% endfor %}
-                        </select>
+                        </datalist>
                     </div>
                     <div class="col-3">
                         <input type="number" step="0.1" id="cant-compra" class="form-control form-control-sm" placeholder="Cant.">
@@ -164,22 +166,30 @@
     }
 
     function agregarItemCompra() {
-        const select = document.getElementById('select-insumo-compra');
+        const inputInsumo = document.getElementById('input-insumo-compra');
         const cantInput = document.getElementById('cant-compra');
         const precioInput = document.getElementById('precio-compra');
 
-        const productoId = select.value;
+        const val = inputInsumo.value;
         const cantidad = parseFloat(cantInput.value);
         const precio_unitario = parseFloat(precioInput.value);
 
-        if (!productoId || isNaN(cantidad) || cantidad <= 0 || isNaN(precio_unitario) || precio_unitario < 0) {
-            alert("Selecciona un insumo, ingresa cantidad y precio unitario válidos.");
-            return;
+        const datalist = document.getElementById('lista-insumos-compra-opt');
+        let productoId = null, nombre = '', unidad = '';
+
+        for (let opt of datalist.options) {
+            if (opt.value === val) {
+                productoId = opt.getAttribute('data-id');
+                nombre = opt.getAttribute('data-nombre');
+                unidad = opt.getAttribute('data-unidad');
+                break;
+            }
         }
 
-        const option = select.options[select.selectedIndex];
-        const nombre = option.getAttribute('data-nombre');
-        const unidad = option.getAttribute('data-unidad');
+        if (!productoId || isNaN(cantidad) || cantidad <= 0 || isNaN(precio_unitario) || precio_unitario < 0) {
+            alert("Escribe un insumo válido de la lista, ingresa cantidad y precio unitario.");
+            return;
+        }
 
         itemsCompra.push({
             producto_id: productoId,
@@ -192,7 +202,7 @@
 
         cantInput.value = '';
         precioInput.value = '';
-        select.value = '';
+        inputInsumo.value = '';
         renderItemsCompra();
     }
 
