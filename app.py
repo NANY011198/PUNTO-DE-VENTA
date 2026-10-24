@@ -538,5 +538,68 @@ def registrar_gasto():
         db.session.rollback()
         return jsonify({"success": False, "message": str(e)}), 500
 
+# ==================== MÓDULO REPORTES Y ANALÍTICA ====================
+
+@app.route('/reportes')
+def ver_reportes():
+    return render_template('reportes.html')
+
+@app.route('/api/reportes/datos')
+def obtener_datos_reportes():
+    try:
+        fecha_inicio_str = request.args.get('fecha_inicio')
+        fecha_fin_str = request.args.get('fecha_fin')
+
+        query_ventas = Venta.query
+
+        if fecha_inicio_str:
+            fecha_inicio = datetime.strptime(fecha_inicio_str, '%Y-%m-%d')
+            query_ventas = query_ventas.filter(Venta.fecha >= fecha_inicio)
+        
+        if fecha_fin_str:
+            fecha_fin = datetime.strptime(fecha_fin_str + ' 23:59:59', '%Y-%m-%d %H:%M:%S')
+            query_ventas = query_ventas.filter(Venta.fecha <= fecha_fin)
+
+        ventas = query_ventas.all()
+
+        total_ventas = sum(v.total for v in ventas)
+        total_ordenes = len(ventas)
+        ticket_promedio = (total_ventas / total_ordenes) if total_ordenes > 0 else 0.0
+
+        # Métodos de Pago
+        metodos = {"Efectivo": 0.0, "Tarjeta": 0.0, "Transferencia": 0.0}
+        for v in ventas:
+            m_pago = v.metodo_pago or "Efectivo"
+            if m_pago in metodos:
+                metodos[m_pago] += v.total
+            else:
+                metodos[m_pago] = v.total
+
+        # Platillos más vendidos
+        platillos_counter = {}
+        for v in ventas:
+            for det in v.detalles:
+                platillo_nombre = det.platillo.nombre if det.platillo else f"Platillo #{det.platillo_id}"
+                if platillo_nombre not in platillos_counter:
+                    platillos_counter[platillo_nombre] = {"cantidad": 0, "monto": 0.0}
+                platillos_counter[platillo_nombre]["cantidad"] += det.cantidad
+                platillos_counter[platillo_nombre]["monto"] += (det.cantidad * det.precio_unitario)
+
+        top_platillos = sorted(
+            [{"nombre": k, "cantidad": v["cantidad"], "monto": v["monto"]} for k, v in platillos_counter.items()],
+            key=lambda x: x["cantidad"],
+            reverse=True
+        )
+
+        return jsonify({
+            "success": True,
+            "total_ventas": total_ventas,
+            "total_ordenes": total_ordenes,
+            "ticket_promedio": ticket_promedio,
+            "metodos_pago": metodos,
+            "top_platillos": top_platillos
+        })
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500
 if __name__ == '__main__':
     app.run(debug=True)
