@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel Principal - Charlie's Pizza</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/charlie.css">
+    <style>
+        .module-card {
+            transition: all 0.3s ease;
+            cursor: pointer;
+            text-decoration: none;
+            display: block;
+        }
+        .module-card:hover {
+            transform: translateY(-8px);
+            border-color: var(--primary-yellow) !important;
+            box-shadow: 0 8px 20px rgba(255, 204, 0, 0.2);
+        }
+        .icon-box {
+            font-size: 2.8rem;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container py-4">
+    <!-- HEADER HUB -->
+    <div class="d-flex justify-content-between align-items-center mb-5 border-bottom border-secondary pb-3">
+        <div class="d-flex align-items-center gap-3">
+            <div class="fs-1">🍕</div>
+            <div>
+                <h2 class="mb-0">CHARLIE'S PIZZA</h2>
+                <small class="text-white-50">Aguilares | Le Damos Sabor a tu Vida</small>
+            </div>
+        </div>
+        <div>
+            <span class="me-3 text-white-50">Usuario: <strong class="text-warning">admin</strong></span>
+            <a href="/logout" class="btn btn-outline-danger btn-sm">Cerrar Sesión</a>
+        </div>
+    </div>
+
+    <h4 class="mb-4 text-center text-white-50">SELECCIONA UN MÓDULO</h4>
+
+    <!-- GRID DE MÓDULOS -->
+    <div class="row g-4">
+        <!-- POS -->
+        <div class="col-md-4">
+            <a href="/pos" class="card module-card p-4 text-center h-100">
+                <div class="icon-box mb-2">🛒</div>
+                <h3 class="h4">Punto de Venta (POS)</h3>
+                <p class="text-white-50 small mb-0">Toma de pedidos rápidos y cobro de clientes.</p>
+            </a>
+        </div>
+
+        <!-- CAJA CHICA -->
+        <div class="col-md-4">
+            <a href="/caja" class="card module-card p-4 text-center h-100">
+                <div class="icon-box mb-2">💵</div>
+                <h3 class="h4">Caja Chica</h3>
+                <p class="text-white-50 small mb-0">Control de apertura, cierre y gastos diarios.</p>
+            </a>
+        </div>
+
+        <!-- COMPRAS -->
+        <div class="col-md-4">
+            <a href="/compras" class="card module-card p-4 text-center h-100">
+                <div class="icon-box mb-2">🚚</div>
+                <h3 class="h4">Compras & Proveedores</h3>
+                <p class="text-white-50 small mb-0">Registro de facturas e ingreso de insumos.</p>
+            </a>
+        </div>
+
+        <!-- MENÚ Y RECETAS -->
+        <div class="col-md-4">
+            <a href="/menu" class="card module-card p-4 text-center h-100">
+                <div class="icon-box mb-2">🍕</div>
+                <h3 class="h4">Menú & Recetas</h3>
+                <p class="text-white-50 small mb-0">Gestión de platillos, precios e ingredientes.</p>
+            </a>
+        </div>
+
+        <!-- INVENTARIO -->
+        <div class="col-md-4">
+            <a href="/inventario" class="card module-card p-4 text-center h-100">
+                <div class="icon-box mb-2">📦</div>
+                <h3 class="h4">Inventario de Stock</h3>
+                <p class="text-white-50 small mb-0">Monitoreo de existencias y alertas de insumos.</p>
+            </a>
+        </div>
+
+        <!-- REPORTES -->
+        <div class="col-md-4">
+            <a href="/reportes" class="card module-card p-4 text-center h-100">
+                <div class="icon-box mb-2">📊</div>
+                <h3 class="h4">Reportes & Analítica</h3>
+                <p class="text-white-50 small mb-0">Estadísticas de ventas y top platillos.</p>
+            </a>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

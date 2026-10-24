@@ -1,0 +1,72 @@
+:root {
+    --bg-dark: #121212;
+    --card-dark: #1e1e1e;
+    --primary-yellow: #ffcc00;
+    --primary-yellow-hover: #e6b800;
+    --text-light: #f8f9fa;
+    --text-muted: #aaaaaa;
+    --border-dark: #333333;
+}
+
+body {
+    background-color: var(--bg-dark) !important;
+    color: var(--text-light) !important;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.card, .modal-content {
+    background-color: var(--card-dark) !important;
+    border: 1px solid var(--border-dark) !important;
+    color: var(--text-light) !important;
+    border-radius: 12px;
+}
+
+h1, h2, h3, h4, h5, h6, .navbar-brand {
+    color: var(--primary-yellow) !important;
+    font-weight: 700;
+}
+
+.btn-charlie {
+    background-color: var(--primary-yellow) !important;
+    color: #000000 !important;
+    font-weight: bold;
+    border: none;
+    transition: all 0.3s ease;
+}
+
+.btn-charlie:hover {
+    background-color: var(--primary-yellow-hover) !important;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(255, 204, 0, 0.3);
+}
+
+.btn-outline-charlie {
+    border: 2px solid var(--primary-yellow) !important;
+    color: var(--primary-yellow) !important;
+    font-weight: bold;
+    background: transparent;
+}
+
+.btn-outline-charlie:hover {
+    background-color: var(--primary-yellow) !important;
+    color: #000000 !important;
+}
+
+.form-control, .form-select {
+    background-color: #2a2a2a !important;
+    border: 1px solid var(--border-dark) !important;
+    color: #ffffff !important;
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: var(--primary-yellow) !important;
+    box-shadow: 0 0 0 0.25rem rgba(255, 204, 0, 0.25) !important;
+}
+
+.table {
+    color: var(--text-light) !important;
+}
+
+.table-dark {
+    --bs-table-bg: #181818 !important;
+}
