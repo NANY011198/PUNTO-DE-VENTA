@@ -218,6 +218,54 @@
             }
         });
     }
+<!-- HISTORIAL DE VENTAS REGISTRADAS (AGREGAR AQUÍ) -->
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <div class="card shadow-sm p-3">
+                <h4 class="card-title mb-3">🛍️ Historial Reciente de Ventas</h4>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead class="table-dark">
+                            <tr>
+                                <th># Ticket</th>
+                                <th>Fecha / Hora</th>
+                                <th>Método de Pago</th>
+                                <th>Total Venta</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for v in ventas %}
+                            <tr>
+                                <td class="fw-bold">#{{ v.id }}</td>
+                                <td>{{ v.fecha.strftime('%Y-%m-%d %H:%M') if v.fecha else 'S/F' }}</td>
+                                <td>
+                                    {% if v.metodo_pago == 'Efectivo' %}
+                                        <span class="badge bg-success">Efectivo</span>
+                                    {% elif v.metodo_pago == 'Tarjeta' %}
+                                        <span class="badge bg-primary">Tarjeta</span>
+                                    {% else %}
+                                        <span class="badge bg-info text-dark">Transferencia</span>
+                                    {% endif %}
+                                </td>
+                                <td class="fw-bold text-success">+${{ "%.2f"|format(v.total or 0) }}</td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="4" class="text-center text-muted py-3">No hay ventas registradas aún.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div> <!-- Cierre del div container -->
+
+<script>
+    function abrirCaja() {
+    ...
 </script>
 </body>
 </html>

@@ -372,6 +372,9 @@ def gestionar_caja():
     try:
         sesion_activa = SesionCaja.query.filter_by(estado='Abierta').order_by(SesionCaja.id.desc()).first()
         gastos = Gasto.query.order_by(Gasto.fecha.desc()).all() or []
+        
+        # Consultar el historial reciente de ventas
+        ventas_historial = Venta.query.order_by(Venta.fecha.desc()).limit(20).all() or []
 
         ventas_efectivo = 0.0
         ventas_tarjeta = 0.0
@@ -403,6 +406,7 @@ def gestionar_caja():
         return render_template('caja.html', 
                                sesion=sesion_activa, 
                                gastos=gastos,
+                               ventas=ventas_historial,
                                ventas_efectivo=ventas_efectivo,
                                ventas_tarjeta=ventas_tarjeta,
                                ventas_transferencia=ventas_transferencia,
