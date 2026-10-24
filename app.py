@@ -111,13 +111,18 @@ class Gasto(db.Model):
     monto = db.Column(db.Float, nullable=False)
     metodo_pago = db.Column(db.String(20), default='Efectivo')
 
-# Crear automáticamente todas las tablas al iniciar
+from sqlalchemy import text
+
+# Crear automáticamente todas las tablas y actualizar columnas faltantes
 with app.app_context():
     try:
         db.create_all()
+        # Migración automática para agregar la columna 'categoria' en Postgres si la tabla ya existía
+        with db.engine.connect() as conn:
+            conn.execute(text("ALTER TABLE gasto ADD COLUMN IF NOT EXISTS categoria VARCHAR(50) DEFAULT 'General';"))
+            conn.commit()
     except Exception as e:
-        print("Error en db.create_all():", e)
-
+        print("Error en inicialización/migración de base de datos:", e)
 # ==================== RUTAS POS Y NAVEGACIÓN ====================
 
 @app.route('/')
