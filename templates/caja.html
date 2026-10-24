@@ -3,141 +3,103 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Caja Chica y Control de Gastos</title>
+    <title>Caja Chica - Charlie's Pizza</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/charlie.css">
 </head>
-<body class="bg-light">
-<div class="container py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2>💵 Caja Chica y Control de Gastos</h2>
-        <a href="/" class="btn btn-outline-primary">← Volver al POS</a>
+<body>
+
+<!-- NAVBAR GLOBAL -->
+<nav class="navbar navbar-expand-lg border-bottom border-secondary mb-4 px-3">
+    <div class="container-fluid">
+        <a class="navbar-brand d-flex align-items-center gap-2" href="/hub">
+            <span class="fs-3">🍕</span>
+            <span>CHARLIE'S PIZZA</span>
+        </a>
+        <div class="d-flex gap-2">
+            <a href="/hub" class="btn btn-outline-charlie btn-sm">🏠 Menú Principal</a>
+            <a href="/pos" class="btn btn-outline-light btn-sm">🛒 POS</a>
+            <a href="/caja" class="btn btn-charlie btn-sm">💵 Caja Chica</a>
+            <a href="/compras" class="btn btn-outline-light btn-sm">🚚 Compras</a>
+            <a href="/menu" class="btn btn-outline-light btn-sm">⚙️ Menú</a>
+            <a href="/inventario" class="btn btn-outline-light btn-sm">📦 Stock</a>
+            <a href="/reportes" class="btn btn-outline-light btn-sm">📊 Reportes</a>
+            <a href="/logout" class="btn btn-outline-danger btn-sm">🚪 Salir</a>
+        </div>
     </div>
+</nav>
 
-    <!-- ESTADO DE LA CAJA -->
-    <div class="row mb-4">
-        <div class="col-md-12">
+<div class="container-fluid px-4 pb-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Control de Caja Chica & Arqueo Diario</h2>
+        <div>
             {% if sesion %}
-                <div class="card border-success shadow-sm p-3 bg-white">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <span class="badge bg-success mb-2 fs-6">CAJA ABIERTA</span>
-                            <h5 class="mb-1 text-muted">Apertura: <strong>{{ sesion.fecha_apertura.strftime('%Y-%m-%d %H:%M') if sesion.fecha_apertura else 'S/F' }}</strong></h5>
-                            <h4 class="mb-0">Monto Inicial: <span class="text-primary">${{ "%.2f"|format(sesion.monto_inicial or 0) }}</span></h4>
-                        </div>
-                        <button class="btn btn-danger fw-bold py-2 px-4" onclick="cerrarCaja()">🔒 CERRAR TURNO DE CAJA</button>
-                    </div>
-
-                    <hr class="my-3">
-
-                    <!-- RESUMEN DE FLUJO DE CAJA EN TIEMPO REAL -->
-                    <div class="row text-center g-3">
-                        <div class="col-md-3">
-                            <div class="p-2 border rounded bg-light">
-                                <small class="text-muted d-block">Ventas Efectivo</small>
-                                <strong class="fs-5 text-success">+${{ "%.2f"|format(ventas_efectivo or 0) }}</strong>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="p-2 border rounded bg-light">
-                                <small class="text-muted d-block">Gastos Efectivo</small>
-                                <strong class="fs-5 text-danger">-${{ "%.2f"|format(gastos_efectivo or 0) }}</strong>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="p-2 border rounded bg-light">
-                                <small class="text-muted d-block">Ventas Tarjeta/Transf.</small>
-                                <strong class="fs-5 text-info">${{ "%.2f"|format((ventas_tarjeta or 0) + (ventas_transferencia or 0)) }}</strong>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="p-2 border rounded bg-success text-white">
-                                <small class="d-block text-white-50">Efectivo Esperado en Caja</small>
-                                <strong class="fs-4">${{ "%.2f"|format(efectivo_esperado or 0) }}</strong>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                <span class="badge bg-success fs-6 p-2 me-2">Estado: Caja Abierta</span>
+                <button class="btn btn-danger fw-bold" data-bs-toggle="modal" data-bs-target="#modalCerrarCaja">🔒 Cerrar Caja</button>
             {% else %}
-                <div class="card border-warning shadow-sm p-4 text-center bg-white">
-                    <span class="badge bg-secondary mb-2 mx-auto fs-6" style="width: 150px;">CAJA CERRADA</span>
-                    <h4 class="fw-bold mb-3">No hay un turno de caja activo</h4>
-                    <div class="col-md-4 mx-auto">
-                        <input type="number" step="0.01" id="monto-apertura" class="form-control text-center mb-3" placeholder="Monto Inicial en Fondo ($)">
-                        <button class="btn btn-success fw-bold w-100 py-2" onclick="abrirCaja()">🔓 ABRIR TURNO DE CAJA</button>
-                    </div>
-                </div>
+                <span class="badge bg-secondary fs-6 p-2 me-2">Estado: Caja Cerrada</span>
+                <button class="btn btn-charlie fw-bold" data-bs-toggle="modal" data-bs-target="#modalAbrirCaja">🔑 Abrir Caja</button>
             {% endif %}
+            <button class="btn btn-warning text-dark fw-bold ms-2" data-bs-toggle="modal" data-bs-target="#modalRegistrarGasto">➕ Registrar Gasto</button>
         </div>
     </div>
 
-    <div class="row">
-        <!-- FORMULARIO NUEVO GASTO -->
-        <div class="col-md-5 mb-4">
-            <div class="card shadow-sm p-3">
-                <h4 class="card-title mb-3">💸 Registrar Gasto / Salida</h4>
-                
-                <div class="mb-3">
-                    <label class="form-label fw-bold">Concepto / Descripción:</label>
-                    <input type="text" id="gasto-concepto" class="form-control" placeholder="Ej. Pago de factura de luz, Alquiler, Hielo">
-                </div>
-
-                <div class="mb-3">
-                    <label class="form-label fw-bold">Categoría:</label>
-                    <select id="gasto-categoria" class="form-select">
-                        <option value="Servicios">Servicios (Luz, Agua, Internet)</option>
-                        <option value="Alquiler">Alquiler</option>
-                        <option value="Sueldos">Sueldos / Planilla</option>
-                        <option value="Insumos Menores">Insumos Menores</option>
-                        <option value="Mantenimiento">Mantenimiento</option>
-                        <option value="General" selected>General</option>
-                    </select>
-                </div>
-
-                <div class="mb-3">
-                    <label class="form-label fw-bold">Monto ($):</label>
-                    <input type="number" step="0.01" id="gasto-monto" class="form-control" placeholder="0.00">
-                </div>
-
-                <div class="mb-3">
-                    <label class="form-label fw-bold">Método de Pago:</label>
-                    <select id="gasto-metodo" class="form-select">
-                        <option value="Efectivo" selected>Efectivo (Sale de Caja)</option>
-                        <option value="Tarjeta">Tarjeta / Banco</option>
-                        <option value="Transferencia">Transferencia</option>
-                    </select>
-                </div>
-
-                <button class="btn btn-danger w-100 fw-bold py-2" onclick="guardarGasto()">REGISTRAR GASTO</button>
+    <!-- TARJETAS DE RESUMEN DE CAJA -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="card p-3 text-center">
+                <small class="text-white-50">Monto Inicial en Caja</small>
+                <h3 class="text-warning mb-0">${{ "%.2f"|format(sesion.monto_inicial if sesion else 0.0) }}</h3>
             </div>
         </div>
+        <div class="col-md-3">
+            <div class="card p-3 text-center">
+                <small class="text-white-50">Ventas en Efectivo</small>
+                <h3 class="text-success mb-0">+${{ "%.2f"|format(ventas_efectivo) }}</h3>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card p-3 text-center">
+                <small class="text-white-50">Gastos en Efectivo</small>
+                <h3 class="text-danger mb-0">-${{ "%.2f"|format(gastos_efectivo) }}</h3>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card p-3 text-center border-warning">
+                <small class="text-white-50">Efectivo Esperado en Caja</small>
+                <h3 class="text-warning fw-bold mb-0">${{ "%.2f"|format(efectivo_esperado) }}</h3>
+            </div>
+        </div>
+    </div>
 
-        <!-- HISTORIAL DE GASTOS -->
-        <div class="col-md-7 mb-4">
-            <div class="card shadow-sm p-3">
-                <h4 class="card-title mb-3">📜 Historial de Gastos Operativos</h4>
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle">
-                        <thead class="table-dark">
+    <div class="row g-4">
+        <!-- REGISTRO DE GASTOS DEL DÍA -->
+        <div class="col-md-6">
+            <div class="card p-3">
+                <h4 class="card-title text-warning mb-3">Gastos Registrados Hoy</h4>
+                <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                    <table class="table table-dark table-striped align-middle">
+                        <thead>
                             <tr>
-                                <th>Fecha</th>
+                                <th>Hora</th>
                                 <th>Concepto</th>
                                 <th>Categoría</th>
-                                <th>Pago</th>
-                                <th>Monto</th>
+                                <th>Método</th>
+                                <th class="text-end">Monto</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for g in gastos %}
                             <tr>
-                                <td class="small">{{ g.fecha.strftime('%Y-%m-%d %H:%M') if g.fecha else 'S/F' }}</td>
-                                <td class="fw-bold">{{ g.concepto }}</td>
+                                <td><small class="text-white-50">{{ g.fecha.strftime('%H:%M') }}</small></td>
+                                <td><strong>{{ g.concepto }}</strong></td>
                                 <td><span class="badge bg-secondary">{{ g.categoria }}</span></td>
-                                <td><span class="badge bg-light text-dark border">{{ g.metodo_pago }}</span></td>
-                                <td class="fw-bold text-danger">-${{ "%.2f"|format(g.monto or 0) }}</td>
+                                <td>{{ g.metodo_pago }}</td>
+                                <td class="text-end text-danger fw-bold">-${{ "%.2f"|format(g.monto) }}</td>
                             </tr>
                             {% else %}
                             <tr>
-                                <td colspan="5" class="text-center text-muted py-3">No hay gastos registrados.</td>
+                                <td colspan="5" class="text-center text-white-50 py-3">No hay gastos registrados el día de hoy</td>
                             </tr>
                             {% endfor %}
                         </tbody>
@@ -145,42 +107,40 @@
                 </div>
             </div>
         </div>
-    </div>
 
-    <!-- HISTORIAL DE VENTAS REGISTRADAS -->
-    <div class="row">
-        <div class="col-md-12">
-            <div class="card shadow-sm p-3">
-                <h4 class="card-title mb-3">🛍️ Historial Reciente de Ventas</h4>
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle">
-                        <thead class="table-dark">
+        <!-- VENTAS REGISTRADAS DEL DÍA -->
+        <div class="col-md-6">
+            <div class="card p-3">
+                <h4 class="card-title text-warning mb-3">Ventas Registradas Hoy</h4>
+                <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                    <table class="table table-dark table-striped align-middle">
+                        <thead>
                             <tr>
-                                <th># Ticket</th>
-                                <th>Fecha / Hora</th>
-                                <th>Método de Pago</th>
-                                <th>Total Venta</th>
+                                <th>Hora</th>
+                                <th>ID Venta</th>
+                                <th>Método</th>
+                                <th class="text-end">Total</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for v in ventas %}
                             <tr>
-                                <td class="fw-bold">#{{ v.id }}</td>
-                                <td>{{ v.fecha.strftime('%Y-%m-%d %H:%M') if v.fecha else 'S/F' }}</td>
+                                <td><small class="text-white-50">{{ v.fecha.strftime('%H:%M') }}</small></td>
+                                <td>#{{ v.id }}</td>
                                 <td>
                                     {% if v.metodo_pago == 'Efectivo' %}
-                                        <span class="badge bg-success">Efectivo</span>
+                                        <span class="badge bg-success">💵 Efectivo</span>
                                     {% elif v.metodo_pago == 'Tarjeta' %}
-                                        <span class="badge bg-primary">Tarjeta</span>
+                                        <span class="badge bg-primary">💳 Tarjeta</span>
                                     {% else %}
-                                        <span class="badge bg-info text-dark">Transferencia</span>
+                                        <span class="badge bg-info text-dark">📲 Transferencia</span>
                                     {% endif %}
                                 </td>
-                                <td class="fw-bold text-success">+${{ "%.2f"|format(v.total or 0) }}</td>
+                                <td class="text-end text-success fw-bold">+${{ "%.2f"|format(v.total) }}</td>
                             </tr>
                             {% else %}
                             <tr>
-                                <td colspan="4" class="text-center text-muted py-3">No hay ventas registradas aún.</td>
+                                <td colspan="4" class="text-center text-white-50 py-3">No hay ventas registradas hoy</td>
                             </tr>
                             {% endfor %}
                         </tbody>
@@ -191,76 +151,148 @@
     </div>
 </div>
 
+<!-- MODAL ABRIR CAJA -->
+<div class="modal fade" id="modalAbrirCaja" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">🔑 Abrir Sesión de Caja</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <label class="form-label text-white-50">Monto Inicial en Efectivo ($)</label>
+                <input type="number" step="0.01" id="abrir-monto" class="form-control" placeholder="0.00" value="50.00">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-charlie" onclick="abrirCaja()">Abrir Caja</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL CERRAR CAJA -->
+<div class="modal fade" id="modalCerrarCaja" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">🔒 Arqueo y Cierre de Caja</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-white-50 mb-2">Efectivo esperado según sistema: <strong class="text-warning">${{ "%.2f"|format(efectivo_esperado) }}</strong></p>
+                <label class="form-label text-white-50">Monto Real Contado en Caja ($)</label>
+                <input type="number" step="0.01" id="cerrar-monto" class="form-control" placeholder="0.00">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-danger fw-bold" onclick="cerrarCaja()">Cerrar Caja Ahora</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL REGISTRAR GASTO -->
+<div class="modal fade" id="modalRegistrarGasto" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">➕ Registrar Nuevo Gasto</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label text-white-50">Concepto del Gasto</label>
+                    <input type="text" id="gasto-concepto" class="form-control" placeholder="Ej: Compra de hielo, pago de gas...">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label text-white-50">Categoría</label>
+                    <select id="gasto-categoria" class="form-select">
+                        <option value="General">General</option>
+                        <option value="Insumos Libres">Insumos Libres</option>
+                        <option value="Servicios">Servicios (Gas, Agua, Luz)</option>
+                        <option value="Limpieza">Limpieza</option>
+                        <option value="Otros">Otros</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label text-white-50">Monto ($)</label>
+                    <input type="number" step="0.01" id="gasto-monto" class="form-control" placeholder="0.00">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label text-white-50">Método de Pago</label>
+                    <select id="gasto-metodo" class="form-select">
+                        <option value="Efectivo" selected>💵 Efectivo de Caja</option>
+                        <option value="Tarjeta">💳 Tarjeta</option>
+                        <option value="Transferencia">📲 Transferencia</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-charlie" onclick="registrarGasto()">Guardar Gasto</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
     function abrirCaja() {
-        const monto = document.getElementById('monto-apertura').value;
-        if (monto === '' || parseFloat(monto) < 0) {
-            alert("Ingresa un monto inicial válido.");
-            return;
-        }
-
+        let monto = document.getElementById('abrir-monto').value;
         fetch('/api/caja/abrir', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ monto_inicial: parseFloat(monto) })
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ monto_inicial: monto })
         })
-        .then(res => res.json())
+        .then(r => r.json())
         .then(data => {
-            if (data.success) {
-                alert(data.message);
+            if(data.success) {
                 location.reload();
             } else {
-                alert("Error: " + data.message);
+                alert(data.message);
             }
         });
     }
 
     function cerrarCaja() {
-        const montoConteo = prompt("Ingrese el dinero real contado en caja para el arqueo ($):");
-        if (montoConteo === null || montoConteo.trim() === '') return;
-
+        let montoReal = document.getElementById('cerrar-monto').value;
         fetch('/api/caja/cerrar', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ monto_cierre_real: parseFloat(montoConteo) })
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ monto_cierre_real: montoReal })
         })
-        .then(res => res.json())
+        .then(r => r.json())
         .then(data => {
-            if (data.success) {
-                alert(data.message);
+            if(data.success) {
                 location.reload();
             } else {
-                alert("Error: " + data.message);
+                alert(data.message);
             }
         });
     }
 
-    function guardarGasto() {
-        const concepto = document.getElementById('gasto-concepto').value.trim();
-        const categoria = document.getElementById('gasto-categoria').value;
-        const monto = parseFloat(document.getElementById('gasto-monto').value);
-        const metodo_pago = document.getElementById('gasto-metodo').value;
-
-        if (!concepto || isNaN(monto) || monto <= 0) {
-            alert("Por favor completa la descripción y un monto mayor a cero.");
-            return;
-        }
+    function registrarGasto() {
+        let concepto = document.getElementById('gasto-concepto').value;
+        let categoria = document.getElementById('gasto-categoria').value;
+        let monto = document.getElementById('gasto-monto').value;
+        let metodo = document.getElementById('gasto-metodo').value;
 
         fetch('/api/gasto/registrar', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ concepto, categoria, monto, metodo_pago })
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ concepto, categoria, monto, metodo_pago: metodo })
         })
-        .then(res => res.json())
+        .then(r => r.json())
         .then(data => {
-            if (data.success) {
-                alert(data.message);
+            if(data.success) {
                 location.reload();
             } else {
-                alert("Error: " + data.message);
+                alert(data.message);
             }
         });
     }
 </script>
+
 </body>
 </html>
