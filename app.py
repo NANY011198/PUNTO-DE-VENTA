@@ -1,4 +1,3 @@
-
 import os
 from datetime import datetime
 from flask import Flask, render_template, request, jsonify
@@ -66,6 +65,17 @@ class Compra(db.Model):
     numero_factura = db.Column(db.String(50), nullable=True)
     proveedor_id = db.Column(db.Integer, db.ForeignKey('proveedor.id'), nullable=False)
     monto_total = db.Column(db.Float, default=0.0)
+    proveedor = db.relationship('Proveedor')
+    detalles = db.relationship('DetalleCompra', backref='compra', cascade="all, delete-orphan")
+
+class DetalleCompra(db.Model):
+    __tablename__ = 'detalle_compra'
+    id = db.Column(db.Integer, primary_key=True)
+    compra_id = db.Column(db.Integer, db.ForeignKey('compra.id'), nullable=False)
+    producto_id = db.Column(db.Integer, db.ForeignKey('producto.id'), nullable=False)
+    cantidad = db.Column(db.Float, nullable=False)
+    precio_unitario = db.Column(db.Float, nullable=False)
+    producto = db.relationship('Producto')
 
 class Venta(db.Model):
     __tablename__ = 'venta'
@@ -150,7 +160,7 @@ def ver_inventario():
     productos = Producto.query.all()
     return render_template('inventario.html', productos=productos)
 
-# ==================== MÓDULO GESTIÓN DE MENÚ Y RECETAS ====================
+# ==================== MÓDULO MENÚ Y RECETAS ====================
 
 @app.route('/menu')
 def gestionar_menu():
@@ -195,7 +205,6 @@ def guardar_platillo_full():
             platillo.categoria_id = categoria_id
             platillo.es_compuesto = len(ingredientes) > 0
             
-            # Limpiar la receta existente para actualizarla
             Receta.query.filter_by(platillo_id=platillo.id).delete()
         else:
             platillo = Platillo(
@@ -208,7 +217,6 @@ def guardar_platillo_full():
         
         db.session.commit()
 
-        # Insertar / Re-insertar ingredientes de la receta
         for ing in ingredientes:
             receta_item = Receta(
                 platillo_id=platillo.id,
@@ -230,6 +238,79 @@ def eliminar_platillo(platillo_id):
         db.session.delete(platillo)
         db.session.commit()
         return jsonify({"success": True, "message": "Platillo y su receta eliminados correctamente."})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"success": False, "message": str(e)}), 500
+
+# ==================== MÓDULO PROVEEDORES Y COMPRAS ====================
+
+@app.route('/compras')
+def gestionar_compras():
+    proveedores = Proveedor.query.all()
+    insumos = Producto.query.all()
+    historial_compras = Compra.query.order_by(Compra.fecha.desc()).all()
+    return render_template('compras.html', proveedores=proveedores, insumos=insumos, compras=historial_compras)
+
+@app.route('/api/proveedor/crear', methods=['POST'])
+def crear_proveedor():
+    try:
+        data = request.get_json()
+        nombre = data.get('nombre')
+        contacto = data.get('contacto')
+        telefono = data.get('telefono')
+        
+        if not nombre:
+            return jsonify({"success": False, "message": "El nombre es obligatorio"}), 400
+            
+        nuevo_prov = Proveedor(nombre=nombre, contacto=contacto, telefono=telefono)
+        db.session.add(nuevo_prov)
+        db.session.commit()
+        return jsonify({"success": True, "message": "Proveedor registrado correctamente."})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"success": False, "message": str(e)}), 500
+
+@app.route('/api/compra/registrar', methods=['POST'])
+def registrar_compra():
+    try:
+        data = request.get_json()
+        proveedor_id = int(data.get('proveedor_id'))
+        numero_factura = data.get('numero_factura')
+        items = data.get('items', [])  # {producto_id, cantidad, precio_unitario}
+
+        if not items:
+            return jsonify({"success": False, "message": "Debe agregar al menos un insumo a la compra."}), 400
+
+        monto_total = 0.0
+        nueva_compra = Compra(
+            proveedor_id=proveedor_id,
+            numero_factura=numero_factura,
+            monto_total=0.0
+        )
+        db.session.add(nueva_compra)
+        db.session.commit()
+
+        for item in items:
+            producto = Producto.query.get(item['producto_id'])
+            cantidad = float(item['cantidad'])
+            precio = float(item['precio_unitario'])
+            subtotal = cantidad * precio
+            monto_total += subtotal
+
+            detalle = DetalleCompra(
+                compra_id=nueva_compra.id,
+                producto_id=producto.id,
+                cantidad=cantidad,
+                precio_unitario=precio
+            )
+            db.session.add(detalle)
+
+            # AUMENTAR STOCK EN INVENTARIO AUTOMÁTICAMENTE
+            producto.stock += cantidad
+
+        nueva_compra.monto_total = monto_total
+        db.session.commit()
+        return jsonify({"success": True, "message": "Compra registrada e inventario actualizado."})
     except Exception as e:
         db.session.rollback()
         return jsonify({"success": False, "message": str(e)}), 500
