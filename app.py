@@ -575,14 +575,25 @@ def obtener_datos_reportes():
             else:
                 metodos[m_pago] = v.total
 
+        # Obtener mapeo rápido de todos los platillos para asegurar los nombres
+        mapa_platillos = {p.id: p.nombre for p in Platillo.query.all()}
+
         # Platillos más vendidos
         platillos_counter = {}
         for v in ventas:
             for det in v.detalles:
-                # Obtener nombre según la relación definida en el modelo
-                platillo_obj = getattr(det, 'platillo', None) or getattr(det, 'producto', None)
-                platillo_nombre = platillo_obj.nombre if platillo_obj else f"Item #{getattr(det, 'platillo_id', getattr(det, 'producto_id', 0))}"
+                # Intentar obtener el ID del platillo/producto
+                p_id = getattr(det, 'platillo_id', None) or getattr(det, 'producto_id', None)
                 
+                # Obtener el nombre del mapa o del objeto directo
+                platillo_obj = getattr(det, 'platillo', None) or getattr(det, 'producto', None)
+                if platillo_obj and hasattr(platillo_obj, 'nombre'):
+                    platillo_nombre = platillo_obj.nombre
+                elif p_id in mapa_platillos:
+                    platillo_nombre = mapa_platillos[p_id]
+                else:
+                    platillo_nombre = f"Platillo #{p_id or 0}"
+
                 if platillo_nombre not in platillos_counter:
                     platillos_counter[platillo_nombre] = {"cantidad": 0, "monto": 0.0}
                 platillos_counter[platillo_nombre]["cantidad"] += det.cantidad
