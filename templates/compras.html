@@ -9,123 +9,116 @@
 <body class="bg-light">
 <div class="container py-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2>🚚 Compras y Gestión de Proveedores</h2>
+        <h2>🛒 Registro de Compras y Proveedores</h2>
         <div>
-            <a href="/inventario" class="btn btn-outline-secondary me-2">📦 Crear / Ver Insumos</a>
+            <button class="btn btn-outline-success me-2" data-bs-toggle="modal" data-bs-target="#modalProveedor">🏭 Nuevo Proveedor</button>
             <a href="/" class="btn btn-outline-primary">← Volver al POS</a>
         </div>
     </div>
 
     <div class="row">
-        <!-- FORMULARIO REGISTRAR PROVEEDOR Y COMPRA -->
-        <div class="col-md-5">
-            <!-- REGISTRO RÁPIDO DE PROVEEDOR -->
-            <div class="card shadow-sm p-3 mb-4">
-                <h5 class="card-title fw-bold mb-3">🏢 Registrar Proveedor</h5>
-                <div class="row g-2 mb-2">
-                    <div class="col-12">
-                        <input type="text" id="prov-nombre" class="form-control form-control-sm" placeholder="Nombre de la empresa / Proveedor">
-                    </div>
-                    <div class="col-6">
-                        <input type="text" id="prov-contacto" class="form-control form-control-sm" placeholder="Persona de contacto">
-                    </div>
-                    <div class="col-6">
-                        <input type="text" id="prov-telefono" class="form-control form-control-sm" placeholder="Teléfono">
-                    </div>
-                </div>
-                <button class="btn btn-sm btn-dark w-100 fw-bold" onclick="guardarProveedor()">Guardar Proveedor</button>
-            </div>
-
-            <!-- REGISTRO DE COMPRA DE INSUMOS -->
+        <!-- FORMULARIO NUEVA COMPRA -->
+        <div class="col-md-5 mb-4">
             <div class="card shadow-sm p-3">
-                <h4 class="card-title mb-3">📦 Nueva Factura de Compra</h4>
+                <h4 class="card-title mb-3">📝 Registrar Nueva Compra</h4>
                 
                 <div class="mb-3">
                     <label class="form-label fw-bold">Proveedor:</label>
-                    <select id="select-proveedor" class="form-select">
-                        <option value="">-- Selecciona un Proveedor --</option>
-                        {% for p in proveedores %}
-                            <option value="{{ p.id }}">{{ p.nombre }}</option>
+                    <select id="compra-proveedor" class="form-select">
+                        <option value="" selected disabled>Selecciona un proveedor...</option>
+                        {% for prov in proveedores %}
+                            <option value="{{ prov.id }}">{{ prov.nombre }} {% if prov.contacto %}({{ prov.contacto }}){% endif %}</option>
                         {% endfor %}
                     </select>
                 </div>
 
                 <div class="mb-3">
-                    <label class="form-label fw-bold">N° Factura / Documento:</label>
-                    <input type="text" id="num-factura" class="form-control" placeholder="Ej. FAC-10024">
+                    <label class="form-label fw-bold">Número de Factura / Ticket:</label>
+                    <input type="text" id="compra-factura" class="form-control" placeholder="Ej. F-00123 o T-554">
                 </div>
 
                 <hr>
-                <h5 class="fw-bold">🛒 Ítems Comprados (Incrementan Stock)</h5>
-                <p class="small text-muted">Escribe el nombre del insumo para buscarlo dinámicamente.</p>
+                <h5 class="fw-bold mb-3">Agregar Insumos</h5>
 
-                <div class="row g-2 mb-2">
-                    <div class="col-5">
-                        <input list="lista-insumos-compra-opt" id="input-insumo-compra" class="form-control form-control-sm" placeholder="Buscar insumo...">
-                        <datalist id="lista-insumos-compra-opt">
-                            {% for ins in insumos %}
-                                <option data-id="{{ ins.id }}" data-nombre="{{ ins.nombre }}" data-unidad="{{ ins.unidad }}" value="{{ ins.nombre }} ({{ ins.unidad }})">
-                            {% endfor %}
-                        </datalist>
+                <div class="mb-2">
+                    <label class="form-label">Insumo:</label>
+                    <select id="item-producto" class="form-select">
+                        <option value="" selected disabled>Selecciona insumo...</option>
+                        {% for ins in insumos %}
+                            <option value="{{ ins.id }}" data-nombre="{{ ins.nombre }}" data-unidad="{{ ins.unidad }}">{{ ins.nombre }} ({{ ins.unidad }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="row g-2 mb-3">
+                    <div class="col-6">
+                        <label class="form-label">Cantidad:</label>
+                        <input type="number" step="0.01" id="item-cantidad" class="form-control" placeholder="0.00">
                     </div>
-                    <div class="col-3">
-                        <input type="number" step="0.1" id="cant-compra" class="form-control form-control-sm" placeholder="Cant.">
-                    </div>
-                    <div class="col-3">
-                        <input type="number" step="0.01" id="precio-compra" class="form-control form-control-sm" placeholder="P. Unit $">
-                    </div>
-                    <div class="col-1">
-                        <button class="btn btn-sm btn-success w-100 fw-bold" onclick="agregarItemCompra()">+</button>
+                    <div class="col-6">
+                        <label class="form-label">Precio Unit. ($):</label>
+                        <input type="number" step="0.01" id="item-precio" class="form-control" placeholder="0.00">
                     </div>
                 </div>
 
-                <!-- Detalle de la Compra Actual -->
-                <ul id="lista-compra-items" class="list-group list-group-flush mb-3 small">
-                    <li class="list-group-item text-muted text-center">Sin ítems agregados</li>
-                </ul>
+                <button class="btn btn-secondary w-100 mb-3" onclick="agregarItemACompra()">+ Añadir a la Lista</button>
 
-                <div class="d-flex justify-content-between fs-5 fw-bold mb-3">
-                    <span>Total Compra:</span>
-                    <span>$<span id="total-compra-txt">0.00</span></span>
+                <!-- TABLA TEMPORAL DE ITEMS -->
+                <div class="table-responsive mb-3">
+                    <table class="table table-sm table-bordered">
+                        <thead class="table-secondary">
+                            <tr>
+                                <th>Insumo</th>
+                                <th>Cant.</th>
+                                <th>Precio</th>
+                                <th>Subtotal</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabla-items-body">
+                            <tr>
+                                <td colspan="5" class="text-center text-muted small">No hay ítems agregados</td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
 
-                <button class="btn btn-primary w-100 fw-bold py-2" onclick="procesarCompra()">REGISTRAR COMPRA</button>
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="mb-0 fw-bold">Total Compra:</h5>
+                    <h4 class="mb-0 text-success fw-bold" id="total-compra-texto">$0.00</h4>
+                </div>
+
+                <button class="btn btn-success w-100 fw-bold py-2" onclick="guardarCompra()">PROCESAR Y GUARDAR COMPRA</button>
             </div>
         </div>
 
         <!-- HISTORIAL DE COMPRAS -->
-        <div class="col-md-7">
+        <div class="col-md-7 mb-4">
             <div class="card shadow-sm p-3">
-                <h4 class="card-title mb-3">📜 Historial de Compras</h4>
+                <h4 class="card-title mb-3">📜 Historial de Compras Registradas</h4>
                 <div class="table-responsive">
                     <table class="table table-hover align-middle">
                         <thead class="table-dark">
                             <tr>
+                                <th>ID</th>
                                 <th>Fecha</th>
-                                <th>Factura</th>
                                 <th>Proveedor</th>
-                                <th>Monto Total</th>
-                                <th>Detalle</th>
+                                <th>Factura</th>
+                                <th>Total</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for c in compras %}
                             <tr>
-                                <td class="small">{{ c.fecha.strftime('%Y-%m-%d %H:%M') }}</td>
-                                <td class="fw-bold">{{ c.numero_factura or 'S/N' }}</td>
-                                <td>{{ c.proveedor.nombre }}</td>
-                                <td class="fw-bold text-success">${{ "%.2f"|format(c.monto_total) }}</td>
-                                <td>
-                                    <ul class="mb-0 ps-3 small text-muted">
-                                        {% for d in c.detalles %}
-                                            <li>{{ d.producto.nombre }}: {{ d.cantidad }} {{ d.producto.unidad }} x ${{ "%.2f"|format(d.precio_unitario) }}</li>
-                                        {% endfor %}
-                                    </ul>
-                                </td>
+                                <td class="fw-bold">#{{ c.id }}</td>
+                                <td class="small">{{ c.fecha.strftime('%Y-%m-%d %H:%M') if c.fecha else 'S/F' }}</td>
+                                <td class="fw-bold">{{ c.proveedor.nombre if c.proveedor else 'N/A' }}</td>
+                                <td><span class="badge bg-light text-dark border">{{ c.numero_factura or 'Sin comprobante' }}</span></td>
+                                <td class="fw-bold text-success">${{ "%.2f"|format(c.monto_total or 0) }}</td>
                             </tr>
                             {% else %}
                             <tr>
-                                <td colspan="5" class="text-center text-muted py-3">No hay compras registradas.</td>
+                                <td colspan="5" class="text-center text-muted py-3">No hay compras registradas en el historial.</td>
                             </tr>
                             {% endfor %}
                         </tbody>
@@ -136,8 +129,98 @@
     </div>
 </div>
 
+<!-- MODAL CREAR PROVEEDOR -->
+<div class="modal fade" id="modalProveedor" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">🏭 Nuevo Proveedor</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Nombre del Proveedor / Empresa:</label>
+                    <input type="text" id="prov-nombre" class="form-control" placeholder="Ej. Distribuidora San José">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Contacto / Vendedor:</label>
+                    <input type="text" id="prov-contacto" class="form-control" placeholder="Ej. Juan Pérez">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Teléfono:</label>
+                    <input type="text" id="prov-telefono" class="form-control" placeholder="Ej. 7890-1234">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-success fw-bold" onclick="guardarProveedor()">Guardar Proveedor</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-    let itemsCompra = [];
+    let carritoCompra = [];
+
+    function agregarItemACompra() {
+        const select = document.getElementById('item-producto');
+        const prodId = select.value;
+        const nombre = select.options[select.selectedIndex]?.getAttribute('data-nombre');
+        const cantidad = parseFloat(document.getElementById('item-cantidad').value);
+        const precio = parseFloat(document.getElementById('item-precio').value);
+
+        if (!prodId || isNaN(cantidad) || cantidad <= 0 || isNaN(precio) || precio < 0) {
+            alert("Por favor selecciona un insumo e ingresa una cantidad y precio válidos.");
+            return;
+        }
+
+        const subtotal = cantidad * precio;
+        carritoCompra.push({
+            producto_id: prodId,
+            nombre: nombre,
+            cantidad: cantidad,
+            precio_unitario: precio,
+            subtotal: subtotal
+        });
+
+        document.getElementById('item-cantidad').value = '';
+        document.getElementById('item-precio').value = '';
+        select.value = '';
+        renderTablaItems();
+    }
+
+    function eliminarItem(index) {
+        carritoCompra.splice(index, 1);
+        renderTablaItems();
+    }
+
+    function renderTablaItems() {
+        const tbody = document.getElementById('tabla-items-body');
+        tbody.innerHTML = '';
+
+        if (carritoCompra.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted small">No hay ítems agregados</td></tr>';
+            document.getElementById('total-compra-texto').innerText = '$0.00';
+            return;
+        }
+
+        let total = 0;
+        carritoCompra.forEach((item, index) => {
+            total += item.subtotal;
+            tbody.innerHTML += `
+                <tr>
+                    <td class="small fw-bold">${item.nombre}</td>
+                    <td>${item.cantidad}</td>
+                    <td>$${item.precio_unitario.toFixed(2)}</td>
+                    <td class="fw-bold">$${item.subtotal.toFixed(2)}</td>
+                    <td class="text-center"><button class="btn btn-sm btn-outline-danger py-0" onclick="eliminarItem(${index})">×</button></td>
+                </tr>
+            `;
+        });
+
+        document.getElementById('total-compra-texto').innerText = `$${total.toFixed(2)}`;
+    }
 
     function guardarProveedor() {
         const nombre = document.getElementById('prov-nombre').value.trim();
@@ -156,103 +239,22 @@
         })
         .then(res => res.json())
         .then(data => {
-            if (data.success) {
-                alert(data.message);
-                location.reload();
-            } else {
-                alert("Error: " + data.message);
-            }
+            alert(data.message);
+            if (data.success) location.reload();
         });
     }
 
-    function agregarItemCompra() {
-        const inputInsumo = document.getElementById('input-insumo-compra');
-        const cantInput = document.getElementById('cant-compra');
-        const precioInput = document.getElementById('precio-compra');
-
-        const val = inputInsumo.value;
-        const cantidad = parseFloat(cantInput.value);
-        const precio_unitario = parseFloat(precioInput.value);
-
-        const datalist = document.getElementById('lista-insumos-compra-opt');
-        let productoId = null, nombre = '', unidad = '';
-
-        for (let opt of datalist.options) {
-            if (opt.value === val) {
-                productoId = opt.getAttribute('data-id');
-                nombre = opt.getAttribute('data-nombre');
-                unidad = opt.getAttribute('data-unidad');
-                break;
-            }
-        }
-
-        if (!productoId || isNaN(cantidad) || cantidad <= 0 || isNaN(precio_unitario) || precio_unitario < 0) {
-            alert("Escribe un insumo válido de la lista, ingresa cantidad y precio unitario.");
-            return;
-        }
-
-        itemsCompra.push({
-            producto_id: productoId,
-            nombre,
-            unidad,
-            cantidad,
-            precio_unitario,
-            subtotal: cantidad * precio_unitario
-        });
-
-        cantInput.value = '';
-        precioInput.value = '';
-        inputInsumo.value = '';
-        renderItemsCompra();
-    }
-
-    function renderItemsCompra() {
-        const lista = document.getElementById('lista-compra-items');
-        const totalTxt = document.getElementById('total-compra-txt');
-        lista.innerHTML = '';
-        let total = 0;
-
-        if (itemsCompra.length === 0) {
-            lista.innerHTML = '<li class="list-group-item text-muted text-center">Sin ítems agregados</li>';
-            totalTxt.innerText = '0.00';
-            return;
-        }
-
-        itemsCompra.forEach((item, index) => {
-            total += item.subtotal;
-            lista.innerHTML += `
-                <li class="list-group-item d-flex justify-content-between align-items-center py-1">
-                    <div>
-                        <strong>${item.nombre}</strong><br>
-                        <small class="text-muted">${item.cantidad} ${item.unidad} x $${item.precio_unitario.toFixed(2)}</small>
-                    </div>
-                    <div>
-                        <span class="fw-bold me-2">$${item.subtotal.toFixed(2)}</span>
-                        <button class="btn btn-sm btn-outline-danger py-0 px-2" onclick="eliminarItemCompra(${index})">×</button>
-                    </div>
-                </li>
-            `;
-        });
-
-        totalTxt.innerText = total.toFixed(2);
-    }
-
-    function eliminarItemCompra(index) {
-        itemsCompra.splice(index, 1);
-        renderItemsCompra();
-    }
-
-    function procesarCompra() {
-        const proveedor_id = document.getElementById('select-proveedor').value;
-        const numero_factura = document.getElementById('num-factura').value.trim();
+    function guardarCompra() {
+        const proveedor_id = document.getElementById('compra-proveedor').value;
+        const numero_factura = document.getElementById('compra-factura').value.trim();
 
         if (!proveedor_id) {
-            alert("Por favor selecciona un proveedor.");
+            alert("Selecciona un proveedor.");
             return;
         }
 
-        if (itemsCompra.length === 0) {
-            alert("Agrega al menos un insumo a la compra.");
+        if (carritoCompra.length === 0) {
+            alert("Agrega al menos un insumo a la lista de compra.");
             return;
         }
 
@@ -260,19 +262,15 @@
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                proveedor_id: proveedor_id,
+                proveedor_id: parseInt(proveedor_id),
                 numero_factura: numero_factura,
-                items: itemsCompra
+                items: carritoCompra
             })
         })
         .then(res => res.json())
         .then(data => {
-            if (data.success) {
-                alert(data.message);
-                location.reload();
-            } else {
-                alert("Error: " + data.message);
-            }
+            alert(data.message);
+            if (data.success) location.reload();
         });
     }
 </script>
