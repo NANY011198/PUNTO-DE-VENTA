@@ -29,6 +29,7 @@ class Producto(db.Model):
     nombre = db.Column(db.String(100), nullable=False, unique=True)
     unidad = db.Column(db.String(20), default='Unidad')
     stock = db.Column(db.Float, default=0.0)
+    stock_minimo = db.Column(db.Float, default=10.0) # <--- NUEVA COLUMNA
     precio_venta = db.Column(db.Float, nullable=True)
     es_directo = db.Column(db.Boolean, default=False)
 
@@ -120,6 +121,7 @@ with app.app_context():
         with db.engine.connect() as conn:
             conn.execute(text("ALTER TABLE gasto ADD COLUMN IF NOT EXISTS categoria VARCHAR(50) DEFAULT 'General';"))
             conn.execute(text("ALTER TABLE gasto ADD COLUMN IF NOT EXISTS metodo_pago VARCHAR(20) DEFAULT 'Efectivo';"))
+            conn.execute(text("ALTER TABLE producto ADD COLUMN IF NOT EXISTS stock_minimo FLOAT DEFAULT 10.0;"))
             conn.commit()
     except Exception as e:
         print("Error en inicialización/migración de base de datos:", e)
@@ -197,6 +199,7 @@ def crear_producto():
         nombre = data.get('nombre', '').strip()
         unidad = data.get('unidad', 'Unidad').strip()
         stock_inicial = float(data.get('stock_inicial', 0.0))
+        stock_minimo = float(data.get('stock_minimo', 10.0))
 
         if not nombre:
             return jsonify({"success": False, "message": "El nombre del insumo es obligatorio."}), 400
@@ -205,10 +208,57 @@ def crear_producto():
         if existente:
             return jsonify({"success": False, "message": f"El insumo '{nombre}' ya existe."}), 400
 
-        nuevo_prod = Producto(nombre=nombre, unidad=unidad, stock=stock_inicial)
+        nuevo_prod = Producto(nombre=nombre, unidad=unidad, stock=stock_inicial, stock_minimo=stock_minimo)
         db.session.add(nuevo_prod)
         db.session.commit()
         return jsonify({"success": True, "message": f"Insumo '{nombre}' creado exitosamente."})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"success": False, "message": str(e)}), 500
+
+@app.route('/api/producto/entrada', methods=['POST'])
+def entrada_stock():
+    try:
+        data = request.get_json()
+        prod_id = int(data.get('producto_id'))
+        cantidad = float(data.get('cantidad', 0.0))
+
+        if cantidad <= 0:
+            return jsonify({"success": False, "message": "Ingresa una cantidad válida a sumar."}), 400
+
+        prod = Producto.query.get_or_404(prod_id)
+        prod.stock += cantidad
+        db.session.commit()
+        return jsonify({"success": True, "message": f"Se añadieron {cantidad} {prod.unidad} a {prod.nombre}."})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"success": False, "message": str(e)}), 500
+
+@app.route('/api/producto/editar', methods=['POST'])
+def editar_producto():
+    try:
+        data = request.get_json()
+        prod_id = int(data.get('id'))
+        prod = Producto.query.get_or_404(prod_id)
+
+        prod.nombre = data.get('nombre', prod.nombre).strip()
+        prod.unidad = data.get('unidad', prod.unidad).strip()
+        prod.stock = float(data.get('stock', prod.stock))
+        prod.stock_minimo = float(data.get('stock_minimo', prod.stock_minimo))
+
+        db.session.commit()
+        return jsonify({"success": True, "message": "Insumo actualizado correctamente."})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"success": False, "message": str(e)}), 500
+
+@app.route('/api/producto/eliminar/<int:prod_id>', methods=['DELETE'])
+def eliminar_producto(prod_id):
+    try:
+        prod = Producto.query.get_or_404(prod_id)
+        db.session.delete(prod)
+        db.session.commit()
+        return jsonify({"success": True, "message": "Insumo eliminado con éxito."})
     except Exception as e:
         db.session.rollback()
         return jsonify({"success": False, "message": str(e)}), 500

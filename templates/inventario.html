@@ -11,73 +11,154 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2>📦 Inventario de Insumos</h2>
         <div>
-            <button class="btn btn-success fw-bold me-2" data-bs-toggle="modal" data-bs-target="#modalInsumo">➕ Crear Nuevo Insumo</button>
+            <button class="btn btn-success me-2" data-bs-toggle="modal" data-bs-target="#modalCrear">➕ Crear Nuevo Insumo</button>
             <a href="/" class="btn btn-outline-primary">← Volver al POS</a>
         </div>
     </div>
 
+    <!-- TABLA DE INSUMOS -->
     <div class="card shadow-sm p-3">
-        <table class="table table-hover align-middle">
-            <thead class="table-dark">
-                <tr>
-                    <th>ID</th>
-                    <th>Insumo / Producto</th>
-                    <th>Unidad</th>
-                    <th>Stock Actual</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for p in productos %}
-                <tr>
-                    <td>{{ p.id }}</td>
-                    <td class="fw-bold">{{ p.nombre }}</td>
-                    <td><span class="badge bg-secondary">{{ p.unidad }}</span></td>
-                    <td class="fw-bold fs-5 {% if p.stock <= 5 %}text-danger{% else %}text-success{% endif %}">
-                        {{ "%.2f"|format(p.stock) }}
-                    </td>
-                </tr>
-                {% else %}
-                <tr>
-                    <td colspan="4" class="text-center text-muted py-3">No hay insumos registrados.</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-dark">
+                    <tr>
+                        <th>ID</th>
+                        <th>Insumo / Producto</th>
+                        <th>Unidad</th>
+                        <th>Stock Actual</th>
+                        <th>Stock Mínimo</th>
+                        <th>Estado</th>
+                        <th class="text-center">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in productos %}
+                    <tr>
+                        <td class="fw-bold">#{{ p.id }}</td>
+                        <td class="fw-bold">{{ p.nombre }}</td>
+                        <td><span class="badge bg-secondary">{{ p.unidad }}</span></td>
+                        <td class="fw-bold fs-5 {% if p.stock <= (p.stock_minimo or 10) %}text-danger{% else %}text-success{% endif %}">
+                            {{ "%.2f"|format(p.stock or 0) }}
+                        </td>
+                        <td class="text-muted">{{ "%.2f"|format(p.stock_minimo or 10) }}</td>
+                        <td>
+                            {% if p.stock <= (p.stock_minimo or 10) %}
+                                <span class="badge bg-danger">⚠️ Stock Bajo</span>
+                            {% else %}
+                                <span class="badge bg-success">Ok</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-center">
+                            <button class="btn btn-sm btn-outline-success me-1" onclick="abrirModalEntrada({{ p.id }}, '{{ p.nombre }}', '{{ p.unidad }}')">➕ Entrada</button>
+                            <button class="btn btn-sm btn-outline-primary me-1" onclick="abrirModalEditar({{ p.id }}, '{{ p.nombre }}', '{{ p.unidad }}', {{ p.stock }}, {{ p.stock_minimo or 10 }})">✏️ Editar</button>
+                            <button class="btn btn-sm btn-outline-danger" onclick="eliminarInsumo({{ p.id }}, '{{ p.nombre }}')">🗑️</button>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="7" class="text-center text-muted py-4">No hay insumos registrados en el inventario.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
     </div>
 </div>
 
 <!-- MODAL CREAR INSUMO -->
-<div class="modal fade" id="modalInsumo" tabindex="-1">
+<div class="modal fade" id="modalCrear" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header bg-success text-white">
-                <h5 class="modal-title fw-bold">➕ Agregar Nuevo Insumo</h5>
+                <h5 class="modal-title">➕ Nuevo Insumo</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
                 <div class="mb-3">
                     <label class="form-label fw-bold">Nombre del Insumo:</label>
-                    <input type="text" id="ins-nombre" class="form-control" placeholder="Ej. Harina, Queso Cheddar, Jamón">
+                    <input type="text" id="crear-nombre" class="form-control" placeholder="Ej. Queso Mozzarella">
                 </div>
                 <div class="mb-3">
                     <label class="form-label fw-bold">Unidad de Medida:</label>
-                    <select id="ins-unidad" class="form-select">
-                        <option value="Gramos">Gramos (g)</option>
-                        <option value="Kilos">Kilos (kg)</option>
-                        <option value="Litros">Litros (l)</option>
-                        <option value="Mililitros">Mililitros (ml)</option>
+                    <select id="crear-unidad" class="form-select">
+                        <option value="Gramos">Gramos</option>
+                        <option value="Kilos">Kilos</option>
+                        <option value="Litros">Litros</option>
+                        <option value="Militros">Mililitros</option>
                         <option value="Unidades" selected>Unidades</option>
-                        <option value="Porciones">Porciones</option>
                     </select>
                 </div>
                 <div class="mb-3">
                     <label class="form-label fw-bold">Stock Inicial:</label>
-                    <input type="number" step="0.1" id="ins-stock" class="form-control" value="0">
+                    <input type="number" step="0.01" id="crear-stock" class="form-control" value="0.00">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Stock Mínimo Alerta:</label>
+                    <input type="number" step="0.01" id="crear-minimo" class="form-control" value="10.00">
                 </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                <button type="button" class="btn btn-success fw-bold" onclick="guardarInsumo()">Guardar Insumo</button>
+                <button type="button" class="btn btn-success fw-bold" onclick="guardarNuevoInsumo()">Guardar Insumo</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL ENTRADA RÁPIDA -->
+<div class="modal fade" id="modalEntrada" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="entrada-titulo">➕ Entrada de Stock</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="entrada-id">
+                <p>Ingresa la cantidad a añadir al stock de <strong id="entrada-nombre"></strong>:</p>
+                <div class="input-group mb-3">
+                    <input type="number" step="0.01" id="entrada-cantidad" class="form-control" placeholder="0.00">
+                    <span class="input-group-text" id="entrada-unidad"></span>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary fw-bold" onclick="procesarEntrada()">Sumar a Stock</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL EDITAR INSUMO -->
+<div class="modal fade" id="modalEditar" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-dark text-white">
+                <h5 class="modal-title">✏️ Editar Insumo</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="edit-id">
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Nombre:</label>
+                    <input type="text" id="edit-nombre" class="form-control">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Unidad:</label>
+                    <input type="text" id="edit-unidad" class="form-control">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Stock Actual:</label>
+                    <input type="number" step="0.01" id="edit-stock" class="form-control">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Stock Mínimo (Alerta):</label>
+                    <input type="number" step="0.01" id="edit-minimo" class="form-control">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-dark fw-bold" onclick="guardarEdicion()">Guardar Cambios</button>
             </div>
         </div>
     </div>
@@ -85,29 +166,100 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-    function guardarInsumo() {
-        const nombre = document.getElementById('ins-nombre').value.trim();
-        const unidad = document.getElementById('ins-unidad').value;
-        const stock_inicial = document.getElementById('ins-stock').value;
+    let modalEntradaBs, modalEditarBs;
+    document.addEventListener('DOMContentLoaded', () => {
+        modalEntradaBs = new bootstrap.Modal(document.getElementById('modalEntrada'));
+        modalEditarBs = new bootstrap.Modal(document.getElementById('modalEditar'));
+    });
+
+    function guardarNuevoInsumo() {
+        const nombre = document.getElementById('crear-nombre').value.trim();
+        const unidad = document.getElementById('crear-unidad').value;
+        const stock_inicial = parseFloat(document.getElementById('crear-stock').value) || 0;
+        const stock_minimo = parseFloat(document.getElementById('crear-minimo').value) || 10;
 
         if (!nombre) {
-            alert("El nombre del insumo es obligatorio.");
+            alert("Ingresa un nombre de insumo válido.");
             return;
         }
 
         fetch('/api/producto/crear', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ nombre, unidad, stock_inicial })
+            body: JSON.stringify({ nombre, unidad, stock_inicial, stock_minimo })
         })
         .then(res => res.json())
         .then(data => {
-            if (data.success) {
-                alert(data.message);
-                location.reload();
-            } else {
-                alert("Error: " + data.message);
-            }
+            alert(data.message);
+            if (data.success) location.reload();
+        });
+    }
+
+    function abrirModalEntrada(id, nombre, unidad) {
+        document.getElementById('entrada-id').value = id;
+        document.getElementById('entrada-nombre').innerText = nombre;
+        document.getElementById('entrada-unidad').innerText = unidad;
+        document.getElementById('entrada-cantidad').value = '';
+        modalEntradaBs.show();
+    }
+
+    function procesarEntrada() {
+        const id = document.getElementById('entrada-id').value;
+        const cantidad = parseFloat(document.getElementById('entrada-cantidad').value);
+
+        if (isNaN(cantidad) || cantidad <= 0) {
+            alert("Ingresa una cantidad mayor a cero.");
+            return;
+        }
+
+        fetch('/api/producto/entrada', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ producto_id: id, cantidad })
+        })
+        .then(res => res.json())
+        .then(data => {
+            alert(data.message);
+            if (data.success) location.reload();
+        });
+    }
+
+    function abrirModalEditar(id, nombre, unidad, stock, stock_minimo) {
+        document.getElementById('edit-id').value = id;
+        document.getElementById('edit-nombre').value = nombre;
+        document.getElementById('edit-unidad').value = unidad;
+        document.getElementById('edit-stock').value = stock;
+        document.getElementById('edit-minimo').value = stock_minimo;
+        modalEditarBs.show();
+    }
+
+    function guardarEdicion() {
+        const id = document.getElementById('edit-id').value;
+        const nombre = document.getElementById('edit-nombre').value.trim();
+        const unidad = document.getElementById('edit-unidad').value.trim();
+        const stock = parseFloat(document.getElementById('edit-stock').value);
+        const stock_minimo = parseFloat(document.getElementById('edit-minimo').value);
+
+        fetch('/api/producto/editar', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id, nombre, unidad, stock, stock_minimo })
+        })
+        .then(res => res.json())
+        .then(data => {
+            alert(data.message);
+            if (data.success) location.reload();
+        });
+    }
+
+    function eliminarInsumo(id, nombre) {
+        if (!confirm(`¿Estás seguro de eliminar el insumo "${nombre}"?`)) return;
+
+        fetch(`/api/producto/eliminar/${id}`, { method: 'DELETE' })
+        .then(res => res.json())
+        .then(data => {
+            alert(data.message);
+            if (data.success) location.reload();
         });
     }
 </script>
