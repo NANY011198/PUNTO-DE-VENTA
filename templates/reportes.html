@@ -3,85 +3,98 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Reportes y Analítica de Ventas</title>
+    <title>Reportes - Charlie's Pizza</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/charlie.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
-<body class="bg-light">
-<div class="container py-4">
+<body>
+
+<!-- NAVBAR GLOBAL -->
+<nav class="navbar navbar-expand-lg border-bottom border-secondary mb-4 px-3">
+    <div class="container-fluid">
+        <a class="navbar-brand d-flex align-items-center gap-2" href="/hub">
+            <span class="fs-3">🍕</span>
+            <span>CHARLIE'S PIZZA</span>
+        </a>
+        <div class="d-flex gap-2">
+            <a href="/hub" class="btn btn-outline-charlie btn-sm">🏠 Menú Principal</a>
+            <a href="/pos" class="btn btn-outline-light btn-sm">🛒 POS</a>
+            <a href="/caja" class="btn btn-outline-light btn-sm">💵 Caja Chica</a>
+            <a href="/compras" class="btn btn-outline-light btn-sm">🚚 Compras</a>
+            <a href="/menu" class="btn btn-outline-light btn-sm">⚙️ Menú</a>
+            <a href="/inventario" class="btn btn-outline-light btn-sm">📦 Stock</a>
+            <a href="/reportes" class="btn btn-charlie btn-sm">📊 Reportes</a>
+            <a href="/logout" class="btn btn-outline-danger btn-sm">🚪 Salir</a>
+        </div>
+    </div>
+</nav>
+
+<div class="container-fluid px-4 pb-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2>📊 Reportes y Analítica de Ventas</h2>
-        <a href="/" class="btn btn-outline-primary">← Volver al POS</a>
-    </div>
-
-    <!-- FILTRO DE FECHAS -->
-    <div class="card shadow-sm p-3 mb-4">
-        <div class="row g-3 align-items-center">
-            <div class="col-md-4">
-                <label class="form-label fw-bold">Fecha Inicio:</label>
-                <input type="date" id="fecha-inicio" class="form-control">
-            </div>
-            <div class="col-md-4">
-                <label class="form-label fw-bold">Fecha Fin:</label>
-                <input type="date" id="fecha-fin" class="form-control">
-            </div>
-            <div class="col-md-4 d-flex align-items-end">
-                <button class="btn btn-primary w-100 fw-bold me-2" onclick="cargarReporte()">🔍 Filtrar Reporte</button>
-                <button class="btn btn-outline-secondary" onclick="limpiarFiltro()">Hoy</button>
-            </div>
+        <h2>Reportes & Analítica de Ventas</h2>
+        <!-- FILTRO DE FECHAS -->
+        <div class="d-flex align-items-center gap-2">
+            <input type="date" id="fecha-inicio" class="form-control form-control-sm">
+            <span class="text-white-50">a</span>
+            <input type="date" id="fecha-fin" class="form-control form-control-sm">
+            <button class="btn btn-charlie btn-sm fw-bold px-3" onclick="cargarDatosReporte()">Filtrar</button>
+            <button class="btn btn-outline-light btn-sm" onclick="limpiarFiltros()">Limpiar</button>
         </div>
     </div>
 
-    <!-- TARJETAS DE MÉTRICAS -->
-    <div class="row mb-4">
-        <div class="col-md-4 mb-3">
-            <div class="card bg-success text-white shadow-sm p-3">
-                <h6 class="text-white-50 text-uppercase fw-bold">Ventas Totales</h6>
-                <h2 class="fw-bold mb-0" id="metric-total">$0.00</h2>
+    <!-- TARJETAS DE MÉTRICAS CLAVE (KPIs) -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="card p-3 text-center border-warning">
+                <small class="text-white-50">Ventas Totales</small>
+                <h2 id="kpi-total-ventas" class="text-warning fw-bold mb-0">$0.00</h2>
             </div>
         </div>
-        <div class="col-md-4 mb-3">
-            <div class="card bg-primary text-white shadow-sm p-3">
-                <h6 class="text-white-50 text-uppercase fw-bold">Total de Órdenes</h6>
-                <h2 class="fw-bold mb-0" id="metric-ordenes">0</h2>
+        <div class="col-md-4">
+            <div class="card p-3 text-center">
+                <small class="text-white-50">Órdenes Atendidas</small>
+                <h2 id="kpi-total-ordenes" class="text-white fw-bold mb-0">0</h2>
             </div>
         </div>
-        <div class="col-md-4 mb-3">
-            <div class="card bg-dark text-white shadow-sm p-3">
-                <h6 class="text-white-50 text-uppercase fw-bold">Ticket Promedio</h6>
-                <h2 class="fw-bold mb-0" id="metric-ticket">$0.00</h2>
+        <div class="col-md-4">
+            <div class="card p-3 text-center">
+                <small class="text-white-50">Ticket Promedio</small>
+                <h2 id="kpi-ticket-promedio" class="text-info fw-bold mb-0">$0.00</h2>
             </div>
         </div>
     </div>
 
-    <div class="row mb-4">
-        <!-- TOP PLATILLOS -->
-        <div class="col-md-7 mb-4">
-            <div class="card shadow-sm p-3 h-100">
-                <h4 class="card-title mb-3">🏆 Platillos más Vendidos</h4>
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle">
-                        <thead class="table-dark">
+    <div class="row g-4">
+        <!-- TABLA PLATILLOS MÁS VENDIDOS -->
+        <div class="col-md-7">
+            <div class="card p-3 h-100">
+                <h4 class="card-title text-warning mb-3">Platillos Más Vendidos</h4>
+                <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                    <table class="table table-dark table-striped align-middle">
+                        <thead>
                             <tr>
                                 <th>#</th>
                                 <th>Platillo</th>
-                                <th class="text-center">Unidades</th>
-                                <th class="text-end">Total Recaudado</th>
+                                <th class="text-center">Unidades Vendidas</th>
+                                <th class="text-end">Monto Total</th>
                             </tr>
                         </thead>
                         <tbody id="tabla-top-platillos">
-                            <tr><td colspan="4" class="text-center text-muted py-3">Cargando datos...</td></tr>
+                            <tr>
+                                <td colspan="4" class="text-center text-white-50 py-3">Cargando datos...</td>
+                            </tr>
                         </tbody>
                     </table>
                 </div>
             </div>
         </div>
 
-        <!-- MÉTODOS DE PAGO GRÁFICO -->
-        <div class="col-md-5 mb-4">
-            <div class="card shadow-sm p-3 h-100">
-                <h4 class="card-title mb-3">💳 Métodos de Pago</h4>
-                <div class="d-flex justify-content-center align-items-center style="height: 250px;">
+        <!-- GRÁFICO DÓSUT MÉTODOS DE PAGO -->
+        <div class="col-md-5">
+            <div class="card p-3 h-100 text-center">
+                <h4 class="card-title text-warning mb-3">Distribución por Método de Pago</h4>
+                <div class="d-flex justify-content-center align-items-center" style="position: relative; height: 320px;">
                     <canvas id="chartMetodosPago"></canvas>
                 </div>
             </div>
@@ -90,88 +103,100 @@
 </div>
 
 <script>
-    let chartInstance = null;
+    let miGraficoMetodos = null;
 
-    document.addEventListener('DOMContentLoaded', () => {
-        const hoy = new Date().toISOString().split('T')[0];
-        document.getElementById('fecha-inicio').value = hoy;
-        document.getElementById('fecha-fin').value = hoy;
-        cargarReporte();
+    document.addEventListener("DOMContentLoaded", () => {
+        cargarDatosReporte();
     });
 
-    function limpiarFiltro() {
-        const hoy = new Date().toISOString().split('T')[0];
-        document.getElementById('fecha-inicio').value = hoy;
-        document.getElementById('fecha-fin').value = hoy;
-        cargarReporte();
+    function cargarDatosReporte() {
+        let inicio = document.getElementById('fecha-inicio').value;
+        let fin = document.getElementById('fecha-fin').value;
+
+        let url = '/api/reportes/datos';
+        let params = [];
+        if (inicio) params.push(`fecha_inicio=${inicio}`);
+        if (fin) params.push(`fecha_fin=${fin}`);
+        if (params.length > 0) url += '?' + params.join('&');
+
+        fetch(url)
+            .then(r => r.json())
+            .then(data => {
+                if (!data.success) {
+                    alert("Error al obtener reportes: " + data.message);
+                    return;
+                }
+
+                // Actualizar KPIs
+                document.getElementById('kpi-total-ventas').innerText = '$' + data.total_ventas.toFixed(2);
+                document.getElementById('kpi-total-ordenes').innerText = data.total_ordenes;
+                document.getElementById('kpi-ticket-promedio').innerText = '$' + data.ticket_promedio.toFixed(2);
+
+                // Renderizar Tabla Top Platillos
+                let tbody = document.getElementById('tabla-top-platillos');
+                if (data.top_platillos.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="4" class="text-center text-white-50 py-3">No hay ventas registradas en este período.</td></tr>';
+                } else {
+                    let html = '';
+                    data.top_platillos.forEach((item, index) => {
+                        html += `
+                            <tr>
+                                <td><span class="badge bg-secondary">${index + 1}</span></td>
+                                <td><strong class="text-white">${item.nombre}</strong></td>
+                                <td class="text-center fw-bold text-warning">${item.cantidad}</td>
+                                <td class="text-end fw-bold text-success">$${item.monto.toFixed(2)}</td>
+                            </tr>
+                        `;
+                    });
+                    tbody.innerHTML = html;
+                }
+
+                // Renderizar Gráfico
+                renderizarGrafico(data.metodos_pago);
+            })
+            .catch(err => console.error("Error en petición de reportes:", err));
     }
 
-    function cargarReporte() {
-        const fInicio = document.getElementById('fecha-inicio').value;
-        const fFin = document.getElementById('fecha-fin').value;
-
-        fetch(`/api/reportes/datos?fecha_inicio=${fInicio}&fecha_fin=${fFin}`)
-        .then(res => res.json())
-        .then(data => {
-            if (!data.success) {
-                alert("Error al cargar reportes: " + data.message);
-                return;
-            }
-
-            // Actualizar tarjetas
-            document.getElementById('metric-total').innerText = `$${data.total_ventas.toFixed(2)}`;
-            document.getElementById('metric-ordenes').innerText = data.total_ordenes;
-            document.getElementById('metric-ticket').innerText = `$${data.ticket_promedio.toFixed(2)}`;
-
-            // Actualizar Tabla Top Platillos
-            const tbody = document.getElementById('tabla-top-platillos');
-            tbody.innerHTML = '';
-            if (data.top_platillos.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-3">No hay ventas registradas en este período.</td></tr>';
-            } else {
-                data.top_platillos.forEach((p, index) => {
-                    tbody.innerHTML += `
-                        <tr>
-                            <td class="fw-bold">${index + 1}</td>
-                            <td class="fw-bold text-primary">${p.nombre}</td>
-                            <td class="text-center"><span class="badge bg-secondary fs-6">${p.cantidad}</span></td>
-                            <td class="text-end fw-bold text-success">$${p.monto.toFixed(2)}</td>
-                        </tr>
-                    `;
-                });
-            }
-
-            // Actualizar Gráfico
-            renderGraficoMetodos(data.metodos_pago);
-        });
+    function limpiarFiltros() {
+        document.getElementById('fecha-inicio').value = '';
+        document.getElementById('fecha-fin').value = '';
+        cargarDatosReporte();
     }
 
-    function renderGraficoMetodos(metodos) {
-        const ctx = document.getElementById('chartMetodosPago').getContext('2d');
-        const labels = Object.keys(metodos);
-        const valores = Object.values(metodos);
+    function renderizarGrafico(metodos) {
+        let ctx = document.getElementById('chartMetodosPago').getContext('2d');
 
-        if (chartInstance) {
-            chartInstance.destroy();
+        if (miGraficoMetodos) {
+            miGraficoMetodos.destroy();
         }
 
-        chartInstance = new Chart(ctx, {
+        let labels = Object.keys(metodos);
+        let valores = Object.values(metodos);
+
+        miGraficoMetodos = new Chart(ctx, {
             type: 'doughnut',
             data: {
                 labels: labels,
                 datasets: [{
                     data: valores,
-                    backgroundColor: ['#198754', '#0d6efd', '#ffc107']
+                    backgroundColor: ['#ffcc00', '#0d6efd', '#0dcaf0', '#6c757d'],
+                    borderColor: '#1e1e1e',
+                    borderWidth: 2
                 }]
             },
             options: {
                 responsive: true,
+                maintainAspectRatio: false,
                 plugins: {
-                    legend: { position: 'bottom' }
+                    legend: {
+                        position: 'bottom',
+                        labels: { color: '#ffffff', font: { size: 14 } }
+                    }
                 }
             }
         });
     }
 </script>
+
 </body>
 </html>
