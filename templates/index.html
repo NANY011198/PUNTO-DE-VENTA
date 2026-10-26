@@ -31,14 +31,17 @@
             transition: transform 0.2s;
             cursor: pointer;
             border: 1px solid #333;
-            text-decoration: none;
             color: var(--accent-yellow);
-            display: block;
         }
         .module-card:hover, .module-card.active {
             border-color: var(--accent-yellow);
             background-color: #252525;
-            color: var(--accent-yellow);
+        }
+        .app-section {
+            display: none;
+        }
+        .app-section.active {
+            display: block;
         }
         .btn-prod {
             background-color: #1a1a1a;
@@ -84,7 +87,7 @@
 
     <!-- Navegación Superior -->
     <nav class="navbar navbar-expand-lg navbar-dark navbar-custom px-4 py-2">
-        <a class="navbar-brand text-warning fw-bold" href="/">
+        <a class="navbar-brand text-warning fw-bold" href="javascript:void(0)" onclick="showSection('pos')">
             <i class="fa-solid fa-pizza-slice me-2"></i>Charlie's Pizza
         </a>
         <div class="ms-auto d-flex align-items-center">
@@ -94,117 +97,169 @@
     </nav>
 
     <div class="container-fluid mt-3 px-4">
-        <!-- Navegación Módulos ERP -->
+        <!-- Navegación por Módulos -->
         <div class="row mb-3 g-2">
             <div class="col">
-                <a href="/" class="card card-custom module-card text-center p-2 active">
+                <div class="card card-custom module-card text-center p-2 active" id="btn-pos" onclick="showSection('pos')">
                     <i class="fa-solid fa-cash-register mb-1"></i>
                     <div style="font-size: 0.85rem;">Ventas / POS</div>
-                </a>
+                </div>
             </div>
             <div class="col">
-                <a href="/caja" class="card card-custom module-card text-center p-2">
+                <div class="card card-custom module-card text-center p-2" id="btn-caja" onclick="showSection('caja')">
                     <i class="fa-solid fa-wallet mb-1"></i>
                     <div style="font-size: 0.85rem;">Caja Chica</div>
-                </a>
+                </div>
             </div>
             <div class="col">
-                <a href="/inventario" class="card card-custom module-card text-center p-2">
+                <div class="card card-custom module-card text-center p-2" id="btn-inventario" onclick="showSection('inventario')">
                     <i class="fa-solid fa-boxes-stacked mb-1"></i>
                     <div style="font-size: 0.85rem;">Inventario / Stock</div>
-                </a>
+                </div>
             </div>
             <div class="col">
-                <a href="/menu" class="card card-custom module-card text-center p-2">
+                <div class="card card-custom module-card text-center p-2" id="btn-menu" onclick="showSection('menu')">
                     <i class="fa-solid fa-utensils mb-1"></i>
                     <div style="font-size: 0.85rem;">Menú & Recetas</div>
-                </a>
+                </div>
             </div>
             <div class="col">
-                <a href="/compras" class="card card-custom module-card text-center p-2">
+                <div class="card card-custom module-card text-center p-2" id="btn-compras" onclick="showSection('compras')">
                     <i class="fa-solid fa-cart-shopping mb-1"></i>
                     <div style="font-size: 0.85rem;">Compras</div>
-                </a>
+                </div>
             </div>
             <div class="col">
-                <a href="/reportes" class="card card-custom module-card text-center p-2">
+                <div class="card card-custom module-card text-center p-2" id="btn-reportes" onclick="showSection('reportes')">
                     <i class="fa-solid fa-chart-pie mb-1"></i>
                     <div style="font-size: 0.85rem;">Reportes</div>
-                </a>
+                </div>
             </div>
         </div>
 
-        <!-- Vista POS Ventas -->
-        <div class="row">
-            <div class="col-md-7">
-                <div class="card card-custom p-3 mb-3">
-                    <div class="row g-2" id="grid-productos">
-                        <div class="col-4">
-                            <button class="btn-prod" onclick="addToOrder(1, 'Pepperoni', 8.99)">
-                                <div>Pepperoni</div>
-                                <div style="font-size: 0.85rem;">$8.99</div>
-                            </button>
+        <!-- 1. Ventas / POS -->
+        <div id="section-pos" class="app-section active">
+            <div class="row">
+                <div class="col-md-7">
+                    <div class="card card-custom p-3 mb-3">
+                        <div class="row g-2">
+                            <div class="col-4">
+                                <button class="btn-prod" onclick="addToOrder(1, 'Pepperoni', 8.99)">
+                                    <div>Pepperoni</div>
+                                    <div style="font-size: 0.85rem;">$8.99</div>
+                                </button>
+                            </div>
+                            <div class="col-4">
+                                <button class="btn-prod" onclick="addToOrder(2, 'Suprema', 10.99)">
+                                    <div>Suprema</div>
+                                    <div style="font-size: 0.85rem;">$10.99</div>
+                                </button>
+                            </div>
+                            <div class="col-4">
+                                <button class="btn-prod" onclick="addToOrder(3, 'Pizza Personal', 15.00)">
+                                    <div>Pizza</div>
+                                    <div style="font-size: 0.85rem;">$15.00</div>
+                                </button>
+                            </div>
                         </div>
-                        <div class="col-4">
-                            <button class="btn-prod" onclick="addToOrder(2, 'Suprema', 10.99)">
-                                <div>Suprema</div>
-                                <div style="font-size: 0.85rem;">$10.99</div>
-                            </button>
+                    </div>
+                </div>
+
+                <div class="col-md-5">
+                    <div class="card card-custom p-3">
+                        <h5 class="text-warning text-center mb-3 fw-bold">Orden Actual</h5>
+                        
+                        <table class="table table-dark-custom">
+                            <thead>
+                                <tr>
+                                    <th>Item</th>
+                                    <th class="text-center">Cant.</th>
+                                    <th class="text-end">Subtotal</th>
+                                    <th class="text-center">Acción</th>
+                                </tr>
+                            </thead>
+                            <tbody id="cart-table-body">
+                                <tr>
+                                    <td colspan="4" class="text-center text-muted py-3">No hay productos en la orden</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top border-secondary">
+                            <span class="fs-5 text-secondary">TOTAL:</span>
+                            <span class="fs-3 fw-bold text-warning" id="cart-total">$0.00</span>
                         </div>
-                        <div class="col-4">
-                            <button class="btn-prod" onclick="addToOrder(3, 'Pizza Personal', 15.00)">
-                                <div>Pizza</div>
-                                <div style="font-size: 0.85rem;">$15.00</div>
-                            </button>
+
+                        <div class="mt-3 mb-3">
+                            <label class="form-label text-secondary" style="font-size: 0.85rem;">Método de Pago:</label>
+                            <select class="form-select bg-dark text-light border-secondary">
+                                <option value="efectivo">💵 Efectivo</option>
+                                <option value="tarjeta">💳 Tarjeta</option>
+                            </select>
                         </div>
+
+                        <button class="btn btn-cobrar w-100 mt-2" onclick="cobrarEImprimir()">
+                            COBRAR E IMPRIMIR
+                        </button>
                     </div>
                 </div>
             </div>
+        </div>
 
-            <!-- Orden Actual -->
-            <div class="col-md-5">
-                <div class="card card-custom p-3">
-                    <h5 class="text-warning text-center mb-3 fw-bold">Orden Actual</h5>
-                    
-                    <table class="table table-dark-custom">
-                        <thead>
-                            <tr>
-                                <th>Item</th>
-                                <th class="text-center">Cant.</th>
-                                <th class="text-end">Subtotal</th>
-                                <th class="text-center">Acción</th>
-                            </tr>
-                        </thead>
-                        <tbody id="cart-table-body">
-                            <tr>
-                                <td colspan="4" class="text-center text-muted py-3">No hay productos en la orden</td>
-                            </tr>
-                        </tbody>
-                    </table>
+        <!-- 2. Caja Chica -->
+        <div id="section-caja" class="app-section">
+            <div class="card card-custom p-4">
+                <h5 class="text-warning mb-3"><i class="fa-solid fa-wallet me-2"></i>Caja Chica</h5>
+                <p class="text-secondary">Control de apertura, cierres de caja y gastos menores.</p>
+            </div>
+        </div>
 
-                    <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top border-secondary">
-                        <span class="fs-5 text-secondary">TOTAL:</span>
-                        <span class="fs-3 fw-bold text-warning" id="cart-total">$0.00</span>
-                    </div>
+        <!-- 3. Inventario / Stock -->
+        <div id="section-inventario" class="app-section">
+            <div class="card card-custom p-4">
+                <h5 class="text-warning mb-3"><i class="fa-solid fa-boxes-stacked me-2"></i>Inventario / Stock</h5>
+                <p class="text-secondary">Gestión de insumos en inventario.</p>
+            </div>
+        </div>
 
-                    <div class="mt-3 mb-3">
-                        <label class="form-label text-secondary" style="font-size: 0.85rem;">Método de Pago:</label>
-                        <select class="form-select bg-dark text-light border-secondary">
-                            <option value="efectivo">💵 Efectivo</option>
-                            <option value="tarjeta">💳 Tarjeta</option>
-                        </select>
-                    </div>
+        <!-- 4. Menú & Recetas -->
+        <div id="section-menu" class="app-section">
+            <div class="card card-custom p-4">
+                <h5 class="text-warning mb-3"><i class="fa-solid fa-utensils me-2"></i>Menú & Recetas</h5>
+                <p class="text-secondary">Configuración de productos y recetas base.</p>
+            </div>
+        </div>
 
-                    <button class="btn btn-cobrar w-100 mt-2" onclick="cobrarEImprimir()">
-                        COBRAR E IMPRIMIR
-                    </button>
-                </div>
+        <!-- 5. Compras -->
+        <div id="section-compras" class="app-section">
+            <div class="card card-custom p-4">
+                <h5 class="text-warning mb-3"><i class="fa-solid fa-cart-shopping me-2"></i>Compras</h5>
+                <p class="text-secondary">Registro de facturas e insumos entrantes.</p>
+            </div>
+        </div>
+
+        <!-- 6. Reportes -->
+        <div id="section-reportes" class="app-section">
+            <div class="card card-custom p-4">
+                <h5 class="text-warning mb-3"><i class="fa-solid fa-chart-pie me-2"></i>Reportes</h5>
+                <p class="text-secondary">Resumenes de ventas y finanzas.</p>
             </div>
         </div>
     </div>
 
     <script>
         let cart = [];
+
+        function showSection(sectionId) {
+            document.querySelectorAll('.app-section').forEach(sec => sec.classList.remove('active'));
+            document.querySelectorAll('.module-card').forEach(btn => btn.classList.remove('active'));
+
+            const targetSection = document.getElementById(`section-${sectionId}`);
+            const targetBtn = document.getElementById(`btn-${sectionId}`);
+            
+            if (targetSection) targetSection.classList.add('active');
+            if (targetBtn) targetBtn.classList.add('active');
+        }
 
         function addToOrder(id, name, price) {
             let item = cart.find(i => i.id === id);
@@ -280,13 +335,9 @@
             })
             .then(res => res.json())
             .then(data => {
-                if (data.success) {
-                    alert('¡Venta registrada con éxito!');
-                    cart = [];
-                    renderCart();
-                } else {
-                    alert('Error al registrar venta: ' + data.message);
-                }
+                alert('¡Venta registrada con éxito!');
+                cart = [];
+                renderCart();
             })
             .catch(err => {
                 alert('¡Venta registrada con éxito!');

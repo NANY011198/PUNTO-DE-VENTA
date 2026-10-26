@@ -5,7 +5,6 @@ from psycopg2.extras import RealDictCursor
 
 app = Flask(__name__)
 
-# Conexión a la base de datos PostgreSQL en Render
 DATABASE_URL = os.environ.get('DATABASE_URL')
 
 def get_db_connection():
@@ -47,7 +46,6 @@ def vender():
         conn = get_db_connection()
         cur = conn.cursor()
         
-        # Registrar venta en la BD
         total_venta = sum(item['precio'] * item['cantidad'] for item in items)
         cur.execute("INSERT INTO ventas (total) VALUES (%s) RETURNING id;", (total_venta,))
         venta_id = cur.fetchone()['id']
@@ -65,27 +63,6 @@ def vender():
         return jsonify({"success": True, "message": "¡Venta registrada con éxito!"})
     except Exception as e:
         return jsonify({"success": False, "message": str(e)}), 500
-
-# RUTAS DE LOS MÓDULOS ERP
-@app.route('/caja')
-def caja():
-    return render_template('caja.html')
-
-@app.route('/inventario')
-def inventario():
-    return render_template('inventario.html')
-
-@app.route('/menu')
-def menu_recetas():
-    return render_template('menu.html')
-
-@app.route('/compras')
-def compras():
-    return render_template('compras.html')
-
-@app.route('/reportes')
-def reportes():
-    return render_template('reportes.html')
 
 if __name__ == '__main__':
     app.run(debug=True)
