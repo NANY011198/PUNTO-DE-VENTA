@@ -138,6 +138,12 @@
             color: var(--text-light);
             border: 1px solid var(--accent-yellow);
         }
+        .metric-card {
+            background-color: #181818;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 15px;
+        }
     </style>
 </head>
 <body>
@@ -231,63 +237,58 @@
                 <div class="row">
                     <div class="col-md-7">
                         <div class="card card-custom p-3 mb-3">
-                            <div class="row g-2">
-                                <div class="col-4">
-                                    <button class="btn-prod" onclick="addToOrder(1, 'Pepperoni', 8.99)">
-                                        <div>Pepperoni</div>
-                                        <div style="font-size: 0.85rem;">$8.99</div>
-                                    </button>
-                                </div>
-                                <div class="col-4">
-                                    <button class="btn-prod" onclick="addToOrder(2, 'Suprema', 10.99)">
-                                        <div>Suprema</div>
-                                        <div style="font-size: 0.85rem;">$10.99</div>
-                                    </button>
-                                </div>
-                                <div class="col-4">
-                                    <button class="btn-prod" onclick="addToOrder(3, 'Pizza Personal', 15.00)">
-                                        <div>Pizza</div>
-                                        <div style="font-size: 0.85rem;">$15.00</div>
-                                    </button>
-                                </div>
+                            <div class="d-flex gap-2 mb-3 overflow-auto">
+                                <button class="btn btn-sm btn-outline-warning active" onclick="filtrarPosCategoria('Todas', this)">Todas</button>
+                                <button class="btn btn-sm btn-outline-warning" onclick="filtrarPosCategoria('Pizzas', this)">🍕 Pizzas</button>
+                                <button class="btn btn-sm btn-outline-warning" onclick="filtrarPosCategoria('Entradas', this)">🍟 Entradas</button>
+                                <button class="btn btn-sm btn-outline-warning" onclick="filtrarPosCategoria('Bebidas', this)">🥤 Bebidas</button>
+                                <button class="btn btn-sm btn-outline-warning" onclick="filtrarPosCategoria('Postres', this)">🍰 Postres</button>
+                                <button class="btn btn-sm btn-outline-warning" onclick="filtrarPosCategoria('Extras', this)">🧀 Extras</button>
+                            </div>
+                            <div class="row g-2" id="grid-pos-productos">
+                                <!-- Platillos agregados dinámicamente -->
                             </div>
                         </div>
                     </div>
 
                     <div class="col-md-5">
                         <div class="card card-custom p-3">
-                            <h5 class="text-warning text-center mb-3 fw-bold">Orden Actual</h5>
-                            <table class="table table-dark-custom">
-                                <thead>
-                                    <tr>
-                                        <th>Item</th>
-                                        <th class="text-center">Cant.</th>
-                                        <th class="text-end">Subtotal</th>
-                                        <th class="text-center">Acción</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="cart-table-body">
-                                    <tr>
-                                        <td colspan="4" class="text-center text-muted py-3">No hay productos en la orden</td>
-                                    </tr>
-                                </tbody>
-                            </table>
+                            <h5 class="text-warning text-center mb-3 fw-bold"><i class="fa-solid fa-receipt me-2"></i>Orden Actual</h5>
+                            <div class="table-responsive">
+                                <table class="table table-dark-custom">
+                                    <thead>
+                                        <tr>
+                                            <th>Platillo</th>
+                                            <th class="text-center">Cant.</th>
+                                            <th class="text-end">P. Unit</th>
+                                            <th class="text-end">Total</th>
+                                            <th class="text-center"></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="cart-table-body">
+                                        <tr>
+                                            <td colspan="5" class="text-center text-muted py-3">No hay productos en la orden</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
 
-                            <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top border-secondary">
+                            <div class="d-flex justify-content-between align-items-center mt-2 pt-2 border-top border-secondary">
                                 <span class="fs-5 text-secondary">TOTAL:</span>
                                 <span class="fs-3 fw-bold text-warning" id="cart-total">$0.00</span>
                             </div>
 
                             <div class="mt-3 mb-3">
-                                <label class="form-label text-secondary" style="font-size: 0.85rem;">Método de Pago:</label>
-                                <select class="form-select bg-dark text-light border-secondary">
-                                    <option value="efectivo">💵 Efectivo</option>
-                                    <option value="tarjeta">💳 Tarjeta</option>
+                                <label class="form-label text-warning small fw-bold">Método de Pago:</label>
+                                <select id="pos-metodo-pago" class="form-select bg-dark text-light border-secondary">
+                                    <option value="EFECTIVO">💵 EFECTIVO</option>
+                                    <option value="TARJETA">💳 TARJETA</option>
+                                    <option value="TRANSFERENCIA">📲 TRANSFERENCIA</option>
                                 </select>
                             </div>
 
                             <button class="btn btn-cobrar w-100 mt-2" onclick="cobrarEImprimir()">
-                                COBRAR E IMPRIMIR
+                                <i class="fa-solid fa-print me-2"></i> COBRAR E IMPRIMIR
                             </button>
                         </div>
                     </div>
@@ -296,13 +297,105 @@
 
             <!-- 2. CAJA CHICA -->
             <div id="section-caja" class="app-section">
-                <div class="card card-custom p-4">
-                    <h5 class="text-warning mb-3"><i class="fa-solid fa-wallet me-2"></i>Caja Chica</h5>
-                    <p class="text-secondary">Control de apertura, cierres de caja y gastos menores.</p>
+                <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+                    <div>
+                        <h4 class="text-warning fw-bold mb-0"><i class="fa-solid fa-wallet me-2"></i>Caja Chica / Control Diario</h4>
+                        <small class="text-secondary">Arqueo de caja, ventas por método de pago y registro de gastos inmediatos.</small>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <label class="text-warning small fw-bold mb-0">Filtrar Día:</label>
+                        <input type="date" id="caja-filtro-fecha" class="form-control bg-dark text-light border-secondary" onchange="renderCajaChica()">
+                        <button class="btn btn-outline-warning" data-bs-toggle="modal" data-bs-target="#modalGasto">
+                            <i class="fa-solid fa-minus-circle me-1"></i> Registrar Gasto
+                        </button>
+                    </div>
+                </div>
+
+                <!-- RESUMEN DE SALDOS -->
+                <div class="row g-3 mb-3">
+                    <div class="col-md-2">
+                        <div class="metric-card text-center">
+                            <small class="text-secondary d-block">Saldo Inicial</small>
+                            <span class="fs-5 fw-bold text-light" id="caja-saldo-inicial">$50.00</span>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="metric-card text-center">
+                            <small class="text-secondary d-block">Efectivo Ventas</small>
+                            <span class="fs-5 fw-bold text-success" id="caja-ventas-efectivo">$0.00</span>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="metric-card text-center">
+                            <small class="text-secondary d-block">Tarjeta Ventas</small>
+                            <span class="fs-5 fw-bold text-info" id="caja-ventas-tarjeta">$0.00</span>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="metric-card text-center">
+                            <small class="text-secondary d-block">Transferencias</small>
+                            <span class="fs-5 fw-bold text-primary" id="caja-ventas-transferencia">$0.00</span>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="metric-card text-center">
+                            <small class="text-secondary d-block">Total Gastos Día</small>
+                            <span class="fs-5 fw-bold text-danger" id="caja-total-gastos">$0.00</span>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="metric-card text-center border-warning">
+                            <small class="text-warning d-block font-weight-bold">Efectivo en Caja</small>
+                            <span class="fs-4 fw-bold text-warning" id="caja-efectivo-total">$50.00</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row g-3">
+                    <!-- VENTAS DEL DÍA -->
+                    <div class="col-md-7">
+                        <div class="card card-custom p-3">
+                            <h6 class="text-warning fw-bold mb-3"><i class="fa-solid fa-cart-shopping me-2"></i>Ventas del Día</h6>
+                            <div class="table-responsive">
+                                <table class="table table-dark-custom align-middle">
+                                    <thead>
+                                        <tr>
+                                            <th>Hora / ID</th>
+                                            <th>Método</th>
+                                            <th class="text-end">Monto Total</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tabla-caja-ventas">
+                                        <tr><td colspan="3" class="text-center text-muted">No hay ventas registradas para la fecha.</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- GASTOS DEL DÍA -->
+                    <div class="col-md-5">
+                        <div class="card card-custom p-3">
+                            <h6 class="text-warning fw-bold mb-3"><i class="fa-solid fa-file-invoice-dollar me-2"></i>Gastos del Día</h6>
+                            <div class="table-responsive">
+                                <table class="table table-dark-custom align-middle">
+                                    <thead>
+                                        <tr>
+                                            <th>Concepto / Insumo</th>
+                                            <th class="text-end">Monto</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tabla-caja-gastos">
+                                        <tr><td colspan="2" class="text-center text-muted">No hay gastos en esta fecha.</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <!-- 3. INVENTARIO / STOCK DE INSUMOS -->
+            <!-- 3. INVENTARIO / STOCK -->
             <div id="section-inventario" class="app-section">
                 <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
                     <div>
@@ -328,22 +421,45 @@
                                 </tr>
                             </thead>
                             <tbody id="tabla-inventario-body">
-                                <!-- Contenido alimentado por JS -->
                             </tbody>
                         </table>
                     </div>
                 </div>
             </div>
 
-            <!-- 4. MENÚ -->
+            <!-- 4. MENÚ & RECETAS -->
             <div id="section-menu" class="app-section">
-                <div class="card card-custom p-4">
-                    <h5 class="text-warning mb-3"><i class="fa-solid fa-utensils me-2"></i>Menú & Recetas</h5>
-                    <p class="text-secondary">Configuración de productos y recetas base.</p>
+                <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+                    <div>
+                        <h4 class="text-warning fw-bold mb-0"><i class="fa-solid fa-utensils me-2"></i>Menú & Recetas</h4>
+                        <small class="text-secondary">Configuración de platillos, precios y enlace de insumos.</small>
+                    </div>
+                    <button class="btn btn-warning fw-bold" onclick="mostrarModalPlatillo()">
+                        <i class="fa-solid fa-plus me-1"></i> Nuevo Platillo / Receta
+                    </button>
+                </div>
+
+                <div class="card card-custom p-3">
+                    <div class="table-responsive">
+                        <table class="table table-dark-custom align-middle">
+                            <thead>
+                                <tr>
+                                    <th>Categoría</th>
+                                    <th>Nombre del Platillo</th>
+                                    <th>Insumos / Receta</th>
+                                    <th class="text-end">Precio ($)</th>
+                                    <th class="text-center">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabla-menu-body">
+                                <!-- Alimentado dinámicamente -->
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
 
-            <!-- 5. MÓDULO DE COMPRAS -->
+            <!-- 5. COMPRAS -->
             <div id="section-compras" class="app-section">
                 <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
                     <div>
@@ -360,7 +476,6 @@
                     </div>
                 </div>
 
-                <!-- HISTORIAL Y FILTROS -->
                 <div class="card card-custom p-3">
                     <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
                         <h6 class="text-warning mb-0 fw-bold"><i class="fa-solid fa-list me-2"></i>Historial de Facturas de Compra</h6>
@@ -389,9 +504,7 @@
                                 </tr>
                             </thead>
                             <tbody id="tabla-compras-body">
-                                <tr>
-                                    <td colspan="4" class="text-center text-muted py-4">No se han registrado compras.</td>
-                                </tr>
+                                <tr><td colspan="4" class="text-center text-muted py-4">No se han registrado compras.</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -400,15 +513,127 @@
 
             <!-- 6. REPORTES -->
             <div id="section-reportes" class="app-section">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h4 class="text-warning fw-bold mb-0"><i class="fa-solid fa-chart-pie me-2"></i>Reportes Financieros y Métricas</h4>
+                </div>
+
+                <div class="row g-3 mb-4">
+                    <div class="col-md-3">
+                        <div class="metric-card border-success">
+                            <small class="text-secondary d-block">Ventas Totales</small>
+                            <span class="fs-3 fw-bold text-success" id="rep-total-ventas">$0.00</span>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="metric-card border-danger">
+                            <small class="text-secondary d-block">Gastos de Caja Chica</small>
+                            <span class="fs-3 fw-bold text-danger" id="rep-total-gastos">$0.00</span>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="metric-card border-info">
+                            <small class="text-secondary d-block">Compras Realizadas</small>
+                            <span class="fs-3 fw-bold text-info" id="rep-total-compras">$0.00</span>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="metric-card border-warning">
+                            <small class="text-secondary d-block">Utilidad Operativa</small>
+                            <span class="fs-3 fw-bold text-warning" id="rep-utilidad">$0.00</span>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="card card-custom p-4">
-                    <h5 class="text-warning mb-3"><i class="fa-solid fa-chart-pie me-2"></i>Reportes</h5>
-                    <p class="text-secondary">Resumenes de ventas y finanzas.</p>
+                    <h6 class="text-warning fw-bold mb-3"><i class="fa-solid fa-pizza-slice me-2"></i>Resumen General del Negocio</h6>
+                    <p class="text-secondary">Información consolidada de Charlie's Pizza acumulada por el sistema.</p>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- MODAL: AGREGAR / EDITAR INSUMO DE INVENTARIO -->
+    <!-- MODAL: PLATILLO / MENU -->
+    <div class="modal fade" id="modalPlatillo" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content modal-content-dark">
+                <div class="modal-header border-secondary">
+                    <h5 class="modal-title text-warning fw-bold" id="titulo-modal-platillo"><i class="fa-solid fa-utensils me-2"></i>Nuevo Platillo</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <form id="form-platillo" onsubmit="guardarPlatillo(event)">
+                    <input type="hidden" id="platillo-index-original">
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label text-warning small fw-bold">Categoría *</label>
+                            <select id="platillo-categoria" class="form-select bg-dark text-light border-secondary" required>
+                                <option value="Pizzas">Pizzas</option>
+                                <option value="Entradas">Entradas</option>
+                                <option value="Bebidas">Bebidas</option>
+                                <option value="Postres">Postres</option>
+                                <option value="Extras">Extras</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label text-warning small fw-bold">Nombre del Platillo *</label>
+                            <input type="text" id="platillo-nombre" class="form-control bg-dark text-light border-secondary" placeholder="Ej: Pizza Suprema Grande" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label text-warning small fw-bold">Precio de Venta ($) *</label>
+                            <input type="number" step="0.01" min="0" id="platillo-precio" class="form-control bg-dark text-light border-secondary" placeholder="10.99" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label text-warning small fw-bold">Insumos / Ingredientes Base</label>
+                            <input type="text" id="platillo-insumos" class="form-control bg-dark text-light border-secondary" placeholder="Ej: Queso Mozzarella, Pepperoni, Salsa Base">
+                        </div>
+                    </div>
+                    <div class="modal-footer border-secondary">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-warning fw-bold">Guardar Platillo</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: REGISTRAR GASTO CAJA CHICA -->
+    <div class="modal fade" id="modalGasto" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content modal-content-dark">
+                <div class="modal-header border-secondary">
+                    <h5 class="modal-title text-warning fw-bold"><i class="fa-solid fa-minus-circle me-2"></i>Registrar Gasto de Caja Chica</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <form id="form-gasto" onsubmit="guardarGasto(event)">
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label text-warning small fw-bold">Fecha *</label>
+                            <input type="date" id="gasto-fecha" class="form-control bg-dark text-light border-secondary" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label text-warning small fw-bold">Concepto / Insumo *</label>
+                            <input type="text" id="gasto-concepto" list="lista-productos-sugeridos" class="form-control bg-dark text-light border-secondary" placeholder="Ej: Compra rápida de queso o Pago de hielo" required>
+                        </div>
+                        <div class="row g-2 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label text-warning small fw-bold">Monto ($) *</label>
+                                <input type="number" step="0.01" min="0.01" id="gasto-monto" class="form-control bg-dark text-light border-secondary" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label text-warning small fw-bold">Suma a Stock Inventario</label>
+                                <input type="number" min="0" id="gasto-cant-stock" class="form-control bg-dark text-light border-secondary" value="0" placeholder="Cant. unids">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer border-secondary">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-warning fw-bold">Registrar Gasto</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: INSUMO INVENTARIO -->
     <div class="modal fade" id="modalInsumo" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content modal-content-dark">
@@ -467,7 +692,7 @@
         </div>
     </div>
 
-    <!-- MODAL: LISTA DE PROVEEDORES -->
+    <!-- MODAL: PROVEEDORES -->
     <div class="modal fade" id="modalProveedores" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-lg">
             <div class="modal-content modal-content-dark">
@@ -563,9 +788,7 @@
                             </button>
                         </div>
 
-                        <!-- LISTA DESPLEGABLE DINÁMICA DE INSUMOS -->
                         <datalist id="lista-productos-sugeridos">
-                            <!-- Se alimenta en tiempo real de la lista de Inventario -->
                         </datalist>
 
                         <div class="table-responsive mb-3">
@@ -622,107 +845,7 @@
             document.getElementById('login-pass').value = '';
         }
 
-        let cart = [];
-
-        function showSection(sectionId) {
-            document.querySelectorAll('.app-section').forEach(sec => sec.classList.remove('active'));
-            document.querySelectorAll('.module-card').forEach(btn => btn.classList.remove('active'));
-
-            const targetSection = document.getElementById(`section-${sectionId}`);
-            const targetBtn = document.getElementById(`btn-${sectionId}`);
-            
-            if (targetSection) targetSection.classList.add('active');
-            if (targetBtn) targetBtn.classList.add('active');
-        }
-
-        function addToOrder(id, name, price) {
-            let item = cart.find(i => i.id === id);
-            if (item) {
-                item.cantidad++;
-            } else {
-                cart.push({ id, nombre: name, precio: price, cantidad: 1 });
-            }
-            renderCart();
-        }
-
-        function changeQty(id, delta) {
-            let item = cart.find(i => i.id === id);
-            if (item) {
-                item.cantidad += delta;
-                if (item.cantidad <= 0) {
-                    cart = cart.filter(i => i.id !== id);
-                }
-            }
-            renderCart();
-        }
-
-        function removeItem(id) {
-            cart = cart.filter(i => i.id !== id);
-            renderCart();
-        }
-
-        function renderCart() {
-            const tbody = document.getElementById('cart-table-body');
-            const totalEl = document.getElementById('cart-total');
-            
-            if (cart.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-3">No hay productos en la orden</td></tr>';
-                totalEl.innerText = '$0.00';
-                return;
-            }
-
-            tbody.innerHTML = '';
-            let total = 0;
-
-            cart.forEach(item => {
-                let subtotal = item.precio * item.cantidad;
-                total += subtotal;
-                tbody.innerHTML += `
-                    <tr>
-                        <td class="text-light">${item.nombre}</td>
-                        <td class="text-center">
-                            <button class="btn btn-sm btn-outline-secondary py-0 px-1" onclick="changeQty(${item.id}, -1)">-</button>
-                            <span class="mx-1">${item.cantidad}</span>
-                            <button class="btn btn-sm btn-outline-secondary py-0 px-1" onclick="changeQty(${item.id}, 1)">+</button>
-                        </td>
-                        <td class="text-end">$${subtotal.toFixed(2)}</td>
-                        <td class="text-center">
-                            <button class="btn btn-sm btn-outline-danger py-0 px-1" onclick="removeItem(${item.id})">×</button>
-                        </td>
-                    </tr>
-                `;
-            });
-
-            totalEl.innerText = `$${total.toFixed(2)}`;
-        }
-
-        function cobrarEImprimir() {
-            if (cart.length === 0) {
-                alert('Agrega productos a la orden antes de cobrar.');
-                return;
-            }
-
-            fetch('/api/vender', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ items: cart })
-            })
-            .then(res => res.json())
-            .then(data => {
-                alert('¡Venta registrada con éxito!');
-                cart = [];
-                renderCart();
-            })
-            .catch(err => {
-                alert('¡Venta registrada con éxito!');
-                cart = [];
-                renderCart();
-            });
-        }
-
-        // ==========================================
-        // PROVEEDORES, COMPRAS E INVENTARIO SISTEMÁTICO
-        // ==========================================
+        // BASE DE DATOS LOCAL SINCRO
         let proveedores = [
             { id: 1, nombre: 'Distribuidora San Miguel', telefono: '7888-9999', categoria: 'Lácteos / Quesos' },
             { id: 2, nombre: 'Molinos de El Salvador', telefono: '7123-4567', categoria: 'Harinas' },
@@ -735,21 +858,372 @@
             { nombre: 'Pepperoni Rebanado (Caja 3kg)', unidad: 'Caja / Paquete', categoria: 'Embutidos / Carnes', cantidad: 8, ultimoPrecio: 12.00 }
         ];
 
+        let menuPlatillos = [
+            { categoria: 'Pizzas', nombre: 'Pizza Pepperoni Grande', precio: 8.99, insumos: 'Queso Mozzarella, Pepperoni' },
+            { categoria: 'Pizzas', nombre: 'Pizza Suprema Grande', precio: 10.99, insumos: 'Queso Mozzarella, Pepperoni, Jamón' },
+            { categoria: 'Entradas', nombre: 'Papas Fritas', precio: 3.50, insumos: 'Papas' },
+            { categoria: 'Bebidas', nombre: 'Soda 1.25L', precio: 2.00, insumos: 'Soda' }
+        ];
+
+        let ventasHistorial = [];
+        let gastosHistorial = [];
         let comprasHistorial = [];
+
+        let cart = [];
         let filaItemCount = 0;
 
         document.addEventListener("DOMContentLoaded", () => {
             const hoy = new Date().toISOString().split('T')[0];
-            const elFecha = document.getElementById('compra-fecha');
-            if(elFecha) elFecha.value = hoy;
+            
+            const elFechaCompra = document.getElementById('compra-fecha');
+            if(elFechaCompra) elFechaCompra.value = hoy;
+
+            const elFechaCaja = document.getElementById('caja-filtro-fecha');
+            if(elFechaCaja) elFechaCaja.value = hoy;
+
+            const elFechaGasto = document.getElementById('gasto-fecha');
+            if(elFechaGasto) elFechaGasto.value = hoy;
 
             actualizarSelectProveedores();
             agregarFilaCompra();
             renderInventario();
-            actualizarDatalistProductos();
+            renderMenu();
+            renderPosGrid('Todas');
+            renderCajaChica();
+            renderReportes();
         });
 
-        /* --- GESTIÓN DE INVENTARIO --- */
+        function showSection(sectionId) {
+            document.querySelectorAll('.app-section').forEach(sec => sec.classList.remove('active'));
+            document.querySelectorAll('.module-card').forEach(btn => btn.classList.remove('active'));
+
+            const targetSection = document.getElementById(`section-${sectionId}`);
+            const targetBtn = document.getElementById(`btn-${sectionId}`);
+            
+            if (targetSection) targetSection.classList.add('active');
+            if (targetBtn) targetBtn.classList.add('active');
+
+            if (sectionId === 'caja') renderCajaChica();
+            if (sectionId === 'reportes') renderReportes();
+        }
+
+        /* --- VENTAS / POS --- */
+        function renderPosGrid(catFiltro) {
+            const grid = document.getElementById('grid-pos-productos');
+            grid.innerHTML = '';
+
+            let lista = (catFiltro === 'Todas') ? menuPlatillos : menuPlatillos.filter(p => p.categoria === catFiltro);
+
+            if (lista.length === 0) {
+                grid.innerHTML = '<div class="col-12 text-center text-muted py-4">No hay platillos registrados en esta categoría.</div>';
+                return;
+            }
+
+            lista.forEach((p) => {
+                grid.innerHTML += `
+                    <div class="col-4">
+                        <button class="btn-prod" onclick="addToOrder('${p.nombre}', ${p.precio})">
+                            <div class="text-truncate">${p.nombre}</div>
+                            <div style="font-size: 0.85rem;">$${p.precio.toFixed(2)}</div>
+                        </button>
+                    </div>
+                `;
+            });
+        }
+
+        function filtrarPosCategoria(cat, btn) {
+            document.querySelectorAll('#section-pos .btn-outline-warning').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            renderPosGrid(cat);
+        }
+
+        function addToOrder(nombre, precio) {
+            let item = cart.find(i => i.nombre === nombre);
+            if (item) {
+                item.cantidad++;
+            } else {
+                cart.push({ nombre: nombre, precio: precio, cantidad: 1 });
+            }
+            renderCart();
+        }
+
+        function changeQty(nombre, delta) {
+            let item = cart.find(i => i.nombre === nombre);
+            if (item) {
+                item.cantidad += delta;
+                if (item.cantidad <= 0) {
+                    cart = cart.filter(i => i.nombre !== nombre);
+                }
+            }
+            renderCart();
+        }
+
+        function removeItem(nombre) {
+            cart = cart.filter(i => i.nombre !== nombre);
+            renderCart();
+        }
+
+        function renderCart() {
+            const tbody = document.getElementById('cart-table-body');
+            const totalEl = document.getElementById('cart-total');
+            
+            if (cart.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-3">No hay productos en la orden</td></tr>';
+                totalEl.innerText = '$0.00';
+                return;
+            }
+
+            tbody.innerHTML = '';
+            let total = 0;
+
+            cart.forEach(item => {
+                let subtotal = item.precio * item.cantidad;
+                total += subtotal;
+                tbody.innerHTML += `
+                    <tr>
+                        <td class="text-light fw-bold">${item.nombre}</td>
+                        <td class="text-center">
+                            <button class="btn btn-sm btn-outline-secondary py-0 px-1" onclick="changeQty('${item.nombre}', -1)">-</button>
+                            <span class="mx-1">${item.cantidad}</span>
+                            <button class="btn btn-sm btn-outline-secondary py-0 px-1" onclick="changeQty('${item.nombre}', 1)">+</button>
+                        </td>
+                        <td class="text-end">$${item.precio.toFixed(2)}</td>
+                        <td class="text-end text-warning fw-bold">$${subtotal.toFixed(2)}</td>
+                        <td class="text-center">
+                            <button class="btn btn-sm btn-outline-danger py-0 px-1" onclick="removeItem('${item.nombre}')">×</button>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            totalEl.innerText = `$${total.toFixed(2)}`;
+        }
+
+        function cobrarEImprimir() {
+            if (cart.length === 0) {
+                alert('Agrega platillos a la orden antes de cobrar.');
+                return;
+            }
+
+            const metodo = document.getElementById('pos-metodo-pago').value;
+            const hoy = new Date().toISOString().split('T')[0];
+            const hora = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+            let totalVenta = 0;
+            cart.forEach(i => totalVenta += (i.precio * i.cantidad));
+
+            ventasHistorial.push({
+                fecha: hoy,
+                hora: hora,
+                id: 'VEN-' + Math.floor(1000 + Math.random() * 9000),
+                metodo: metodo,
+                monto: totalVenta
+            });
+
+            alert(`¡Cobro registrado con éxito!\nMétodo: ${metodo}\nTotal: $${totalVenta.toFixed(2)}`);
+            cart = [];
+            renderCart();
+            renderCajaChica();
+        }
+
+        /* --- MENÚ & RECETAS --- */
+        function renderMenu() {
+            const tbody = document.getElementById('tabla-menu-body');
+            tbody.innerHTML = '';
+
+            if (menuPlatillos.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-4">No hay platillos registrados en el menú.</td></tr>';
+                return;
+            }
+
+            menuPlatillos.forEach((item, index) => {
+                tbody.innerHTML += `
+                    <tr>
+                        <td><span class="badge bg-secondary">${item.categoria}</span></td>
+                        <td class="fw-bold text-light">${item.nombre}</td>
+                        <td class="text-secondary small">${item.insumos || 'N/A'}</td>
+                        <td class="text-end fw-bold text-warning">$${item.precio.toFixed(2)}</td>
+                        <td class="text-center">
+                            <button class="btn btn-sm btn-outline-warning me-1" onclick="editarPlatillo(${index})"><i class="fa-solid fa-pen"></i></button>
+                            <button class="btn btn-sm btn-outline-danger" onclick="eliminarPlatillo(${index})"><i class="fa-solid fa-trash"></i></button>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            renderPosGrid('Todas');
+        }
+
+        function mostrarModalPlatillo() {
+            document.getElementById('form-platillo').reset();
+            document.getElementById('platillo-index-original').value = '';
+            document.getElementById('titulo-modal-platillo').innerHTML = '<i class="fa-solid fa-utensils me-2"></i>Nuevo Platillo';
+            const modal = new bootstrap.Modal(document.getElementById('modalPlatillo'));
+            modal.show();
+        }
+
+        function guardarPlatillo(e) {
+            e.preventDefault();
+            const indexOriginal = document.getElementById('platillo-index-original').value;
+            const categoria = document.getElementById('platillo-categoria').value;
+            const nombre = document.getElementById('platillo-nombre').value.trim();
+            const precio = parseFloat(document.getElementById('platillo-precio').value) || 0;
+            const insumos = document.getElementById('platillo-insumos').value;
+
+            if (indexOriginal !== '') {
+                menuPlatillos[indexOriginal] = { categoria, nombre, precio, insumos };
+            } else {
+                menuPlatillos.push({ categoria, nombre, precio, insumos });
+            }
+
+            renderMenu();
+
+            const modalEl = document.getElementById('modalPlatillo');
+            const modal = bootstrap.Modal.getInstance(modalEl);
+            if(modal) modal.hide();
+
+            alert('¡Platillo guardado correctamente!');
+        }
+
+        function editarPlatillo(index) {
+            const item = menuPlatillos[index];
+            if (!item) return;
+
+            document.getElementById('platillo-index-original').value = index;
+            document.getElementById('platillo-categoria').value = item.categoria;
+            document.getElementById('platillo-nombre').value = item.nombre;
+            document.getElementById('platillo-precio').value = item.precio;
+            document.getElementById('platillo-insumos').value = item.insumos || '';
+
+            document.getElementById('titulo-modal-platillo').innerHTML = '<i class="fa-solid fa-pen-to-square me-2"></i>Editar Platillo';
+            const modal = new bootstrap.Modal(document.getElementById('modalPlatillo'));
+            modal.show();
+        }
+
+        function eliminarPlatillo(index) {
+            if (confirm('¿Deseas eliminar este platillo del menú?')) {
+                menuPlatillos.splice(index, 1);
+                renderMenu();
+            }
+        }
+
+        /* --- CAJA CHICA --- */
+        function renderCajaChica() {
+            const fechaFiltro = document.getElementById('caja-filtro-fecha').value;
+            const saldoInicial = 50.00;
+
+            let efectVentas = 0;
+            let tarjVentas = 0;
+            let transfVentas = 0;
+
+            const tVentasBody = document.getElementById('tabla-caja-ventas');
+            tVentasBody.innerHTML = '';
+
+            const ventasDia = ventasHistorial.filter(v => v.fecha === fechaFiltro);
+
+            if (ventasDia.length === 0) {
+                tVentasBody.innerHTML = '<tr><td colspan="3" class="text-center text-muted py-3">No hay ventas registradas para la fecha.</td></tr>';
+            } else {
+                ventasDia.forEach(v => {
+                    if (v.metodo === 'EFECTIVO') efectVentas += v.monto;
+                    if (v.metodo === 'TARJETA') tarjVentas += v.monto;
+                    if (v.metodo === 'TRANSFERENCIA') transfVentas += v.monto;
+
+                    tVentasBody.innerHTML += `
+                        <tr>
+                            <td>${v.hora} <span class="badge bg-secondary ms-1">${v.id}</span></td>
+                            <td><span class="badge ${v.metodo === 'EFECTIVO' ? 'bg-success' : (v.metodo === 'TARJETA' ? 'bg-info' : 'bg-primary')}">${v.metodo}</span></td>
+                            <td class="text-end fw-bold text-warning">$${v.monto.toFixed(2)}</td>
+                        </tr>
+                    `;
+                });
+            }
+
+            let totalGastos = 0;
+            const tGastosBody = document.getElementById('tabla-caja-gastos');
+            tGastosBody.innerHTML = '';
+
+            const gastosDia = gastosHistorial.filter(g => g.fecha === fechaFiltro);
+
+            if (gastosDia.length === 0) {
+                tGastosBody.innerHTML = '<tr><td colspan="2" class="text-center text-muted py-3">No hay gastos en esta fecha.</td></tr>';
+            } else {
+                gastosDia.forEach(g => {
+                    totalGastos += g.monto;
+                    tGastosBody.innerHTML += `
+                        <tr>
+                            <td class="text-light">${g.concepto}</td>
+                            <td class="text-end fw-bold text-danger">-$${g.monto.toFixed(2)}</td>
+                        </tr>
+                    `;
+                });
+            }
+
+            document.getElementById('caja-saldo-inicial').innerText = `$${saldoInicial.toFixed(2)}`;
+            document.getElementById('caja-ventas-efectivo').innerText = `$${efectVentas.toFixed(2)}`;
+            document.getElementById('caja-ventas-tarjeta').innerText = `$${tarjVentas.toFixed(2)}`;
+            document.getElementById('caja-ventas-transferencia').innerText = `$${transfVentas.toFixed(2)}`;
+            document.getElementById('caja-total-gastos').innerText = `$${totalGastos.toFixed(2)}`;
+
+            const efectivoFinal = saldoInicial + efectVentas - totalGastos;
+            document.getElementById('caja-efectivo-total').innerText = `$${efectivoFinal.toFixed(2)}`;
+        }
+
+        function guardarGasto(e) {
+            e.preventDefault();
+            const fecha = document.getElementById('gasto-fecha').value;
+            const concepto = document.getElementById('gasto-concepto').value.trim();
+            const monto = parseFloat(document.getElementById('gasto-monto').value) || 0;
+            const cantStock = parseFloat(document.getElementById('gasto-cant-stock').value) || 0;
+
+            gastosHistorial.push({ fecha, concepto, monto });
+
+            if (cantStock > 0 && concepto) {
+                let existente = inventarioStock.find(i => i.nombre.toLowerCase() === concepto.toLowerCase());
+                if (existente) {
+                    existente.cantidad += cantStock;
+                } else {
+                    inventarioStock.push({
+                        nombre: concepto,
+                        unidad: 'Unidades',
+                        categoria: 'Gasto Caja Chica',
+                        cantidad: cantStock,
+                        ultimoPrecio: monto / cantStock
+                    });
+                }
+                renderInventario();
+            }
+
+            renderCajaChica();
+
+            const modalEl = document.getElementById('modalGasto');
+            const modal = bootstrap.Modal.getInstance(modalEl);
+            if(modal) modal.hide();
+
+            document.getElementById('form-gasto').reset();
+            alert('¡Gasto registrado con éxito!');
+        }
+
+        /* --- REPORTES --- */
+        function renderReportes() {
+            let totVentas = 0;
+            ventasHistorial.forEach(v => totVentas += v.monto);
+
+            let totGastos = 0;
+            gastosHistorial.forEach(g => totGastos += g.monto);
+
+            let totCompras = 0;
+            comprasHistorial.forEach(c => totCompras += c.totalGeneral);
+
+            const utilidad = totVentas - (totGastos + totCompras);
+
+            document.getElementById('rep-total-ventas').innerText = `$${totVentas.toFixed(2)}`;
+            document.getElementById('rep-total-gastos').innerText = `$${totGastos.toFixed(2)}`;
+            document.getElementById('rep-total-compras').innerText = `$${totCompras.toFixed(2)}`;
+            document.getElementById('rep-utilidad').innerText = `$${utilidad.toFixed(2)}`;
+        }
+
+        /* --- INVENTARIO Y PROVEEDORES --- */
         function renderInventario() {
             const tbody = document.getElementById('tabla-inventario-body');
             if (!tbody) return;
@@ -784,7 +1258,6 @@
             document.getElementById('form-insumo').reset();
             document.getElementById('insumo-id-original').value = '';
             document.getElementById('titulo-modal-insumo').innerHTML = '<i class="fa-solid fa-box-open me-2"></i>Nuevo Insumo / Producto';
-            
             const modal = new bootstrap.Modal(document.getElementById('modalInsumo'));
             modal.show();
         }
@@ -825,7 +1298,6 @@
             document.getElementById('insumo-precio').value = item.ultimoPrecio;
 
             document.getElementById('titulo-modal-insumo').innerHTML = '<i class="fa-solid fa-pen-to-square me-2"></i>Editar Insumo';
-
             const modal = new bootstrap.Modal(document.getElementById('modalInsumo'));
             modal.show();
         }
@@ -847,7 +1319,6 @@
             });
         }
 
-        /* --- PROVEEDORES --- */
         function actualizarSelectProveedores() {
             const select = document.getElementById('compra-proveedor');
             if(!select) return;
@@ -936,7 +1407,6 @@
             }
         }
 
-        /* --- FILAS DE COMPRA --- */
         function agregarFilaCompra() {
             filaItemCount++;
             const tbody = document.getElementById('tabla-items-compra');
@@ -988,7 +1458,6 @@
             document.getElementById('compra-total-gral').innerText = `$${totalGeneral.toFixed(2)}`;
         }
 
-        /* --- GUARDAR COMPRA Y ACTUALIZAR STOCK Y DATALIST --- */
         function guardarCompra(e) {
             e.preventDefault();
             const fecha = document.getElementById('compra-fecha').value;
@@ -1038,7 +1507,6 @@
             alert('¡Compra registrada y Stock actualizado con éxito!');
         }
 
-        /* --- RENDER Y FILTRADO DE COMPRAS --- */
         function renderTablaCompras(lista) {
             const tbody = document.getElementById('tabla-compras-body');
             tbody.innerHTML = '';
