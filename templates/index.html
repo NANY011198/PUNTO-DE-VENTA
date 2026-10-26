@@ -184,7 +184,7 @@
         </nav>
 
         <div class="container-fluid mt-3 px-4">
-            <!-- NAVEGACIÓN -->
+            <!-- NAVEGACIÓN DE MÓDULOS -->
             <div class="row mb-3 g-2">
                 <div class="col">
                     <div class="card card-custom module-card text-center p-2 active" id="btn-pos" onclick="showSection('pos')">
@@ -300,11 +300,25 @@
                 </div>
             </div>
 
-            <!-- 3. INVENTARIO -->
+            <!-- 3. INVENTARIO / STOCK -->
             <div id="section-inventario" class="app-section">
                 <div class="card card-custom p-4">
-                    <h5 class="text-warning mb-3"><i class="fa-solid fa-boxes-stacked me-2"></i>Inventario / Stock</h5>
-                    <p class="text-secondary">Gestión de insumos en inventario.</p>
+                    <h5 class="text-warning mb-3 fw-bold"><i class="fa-solid fa-boxes-stacked me-2"></i>Inventario / Stock de Insumos</h5>
+                    <div class="table-responsive">
+                        <table class="table table-dark-custom align-middle">
+                            <thead>
+                                <tr>
+                                    <th>Insumo / Producto</th>
+                                    <th class="text-center">Stock Actual</th>
+                                    <th class="text-end">Último Precio Compra</th>
+                                    <th class="text-center">Estado</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabla-inventario-body">
+                                <!-- Se alimenta automáticamente de las compras -->
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
 
@@ -316,16 +330,17 @@
                 </div>
             </div>
 
-            <!-- 5. MÓDULO DE COMPRAS COMPLETO -->
+            <!-- 5. MÓDULO DE COMPRAS -->
             <div id="section-compras" class="app-section">
-                <div class="d-flex justify-content-between align-items-center mb-3">
+                <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
                     <div>
                         <h4 class="text-warning fw-bold mb-0"><i class="fa-solid fa-cart-shopping me-2"></i>Módulo de Compras</h4>
                         <small class="text-secondary">Registro de facturas, insumos entrantes y proveedores.</small>
                     </div>
                     <div>
-                        <button class="btn btn-outline-warning me-2" data-bs-toggle="modal" data-bs-target="#modalProveedor">
-                            <i class="fa-solid fa-user-plus me-1"></i> Nuevo Proveedor
+                        <!-- BOTÓN PROVEEDORES QUE MUESTRA LA LISTA -->
+                        <button class="btn btn-outline-warning me-2 fw-bold" data-bs-toggle="modal" data-bs-target="#modalProveedores" onclick="renderTablaProveedores()">
+                            <i class="fa-solid fa-users me-1"></i> Proveedores
                         </button>
                         <button class="btn btn-warning fw-bold" data-bs-toggle="modal" data-bs-target="#modalCompra">
                             <i class="fa-solid fa-file-invoice-dollar me-1"></i> Registrar Compra
@@ -333,24 +348,39 @@
                     </div>
                 </div>
 
-                <!-- LISTA DE COMPRAS RECIENTES -->
+                <!-- HISTORIAL Y FILTROS -->
                 <div class="card card-custom p-3">
-                    <h6 class="text-warning mb-3 fw-bold"><i class="fa-solid fa-list me-2"></i>Historial de Facturas de Compra</h6>
+                    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+                        <h6 class="text-warning mb-0 fw-bold"><i class="fa-solid fa-list me-2"></i>Historial de Facturas de Compra</h6>
+                        
+                        <!-- FILTROS POR FECHA Y NOMBRE DEL PROVEEDOR -->
+                        <div class="d-flex gap-2 align-items-center flex-wrap">
+                            <div>
+                                <input type="date" id="filtro-fecha" class="form-control form-control-sm bg-dark text-light border-secondary" onchange="filtrarCompras()" title="Filtrar por Fecha">
+                            </div>
+                            <div>
+                                <input type="text" id="filtro-proveedor" class="form-control form-control-sm bg-dark text-light border-secondary" oninput="filtrarCompras()" placeholder="Filtrar por proveedor...">
+                            </div>
+                            <button class="btn btn-sm btn-outline-secondary text-warning" onclick="limpiarFiltrosCompras()" title="Limpiar Filtros">
+                                <i class="fa-solid fa-filter-circle-xmark"></i> Limpiar
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- TABLA CON COLUMNAS: FECHA, FACTURA, PROVEEDOR Y MONTO -->
                     <div class="table-responsive">
-                        <table class="table table-dark-custom mb-0">
+                        <table class="table table-dark-custom align-middle mb-0">
                             <thead>
                                 <tr>
                                     <th>Fecha</th>
-                                    <th>N° Factura</th>
-                                    <th>Proveedor</th>
-                                    <th class="text-center">Cant. Ítems</th>
-                                    <th class="text-end">Total</th>
-                                    <th class="text-center">Estado</th>
+                                    <th>Factura</th>
+                                    <th>Nombre del Proveedor</th>
+                                    <th class="text-end">Monto de la Compra</th>
                                 </tr>
                             </thead>
                             <tbody id="tabla-compras-body">
                                 <tr>
-                                    <td colspan="6" class="text-center text-muted py-4">No se han registrado compras recientemente.</td>
+                                    <td colspan="4" class="text-center text-muted py-4">No se han registrado compras.</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -368,50 +398,70 @@
         </div>
     </div>
 
-    <!-- MODAL: AGREGAR PROVEEDOR -->
-    <div class="modal fade" id="modalProveedor" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog">
+    <!-- MODAL 1: LISTA DE PROVEEDORES (EDITAR, ELIMINAR Y AGREGAR) -->
+    <div class="modal fade" id="modalProveedores" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
             <div class="modal-content modal-content-dark">
                 <div class="modal-header border-secondary">
-                    <h5 class="modal-title text-warning fw-bold"><i class="fa-solid fa-truck-field me-2"></i>Nuevo Proveedor</h5>
+                    <h5 class="modal-title text-warning fw-bold"><i class="fa-solid fa-users me-2"></i>Lista de Proveedores</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
-                <form id="form-proveedor" onsubmit="guardarProveedor(event)">
-                    <div class="modal-body">
-                        <div class="mb-3">
-                            <label class="form-label text-warning small fw-bold">Nombre del Proveedor / Empresa *</label>
-                            <input type="text" id="prov-nombre" class="form-control bg-dark text-light border-secondary" placeholder="Ej: Distribuidora Lacteos S.A." required>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label text-warning small fw-bold">Teléfono / Contacto *</label>
-                            <input type="tel" id="prov-telefono" class="form-control bg-dark text-light border-secondary" placeholder="Ej: 7777-8888" required>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label text-warning small fw-bold">Tipo de Insumo Principal</label>
-                            <select id="prov-categoria" class="form-select bg-dark text-light border-secondary">
-                                <option value="Lácteos / Quesos">Lácteos / Quesos</option>
-                                <option value="Harinas / Masas">Harinas / Masas</option>
-                                <option value="Embutidos / Carnes">Embutidos / Carnes</option>
-                                <option value="Salsas / Bebidas">Salsas / Bebidas</option>
-                                <option value="Empaques / Cajas">Empaques / Cajas</option>
-                                <option value="Otros">Otros</option>
-                            </select>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label text-warning small fw-bold">Dirección / Notas</label>
-                            <textarea id="prov-notas" class="form-control bg-dark text-light border-secondary" rows="2" placeholder="Ej: Entrega los martes y jueves"></textarea>
-                        </div>
+                <div class="modal-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <span class="text-secondary small">Gestiona el directorio de proveedores registrados.</span>
+                        <button class="btn btn-sm btn-warning fw-bold" onclick="mostrarFormNuevoProveedor()">
+                            <i class="fa-solid fa-plus me-1"></i> Agregar Nuevo Proveedor
+                        </button>
                     </div>
-                    <div class="modal-footer border-secondary">
-                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
-                        <button type="submit" class="btn btn-warning fw-bold">Guardar Proveedor</button>
+
+                    <!-- FORMULARIO AGREGAR / EDITAR PROVEEDOR (OCULTO POR DEFECTO) -->
+                    <div id="contenedor-form-proveedor" class="p-3 bg-dark rounded border border-warning mb-3 d-none">
+                        <h6 class="text-warning fw-bold mb-3" id="titulo-form-proveedor">Nuevo Proveedor</h6>
+                        <form id="form-proveedor" onsubmit="guardarProveedor(event)">
+                            <input type="hidden" id="prov-id">
+                            <div class="row g-2 mb-2">
+                                <div class="col-md-6">
+                                    <label class="form-label text-warning small fw-bold mb-1">Nombre / Empresa *</label>
+                                    <input type="text" id="prov-nombre" class="form-control form-control-sm bg-dark text-light border-secondary" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label text-warning small fw-bold mb-1">Teléfono / Contacto *</label>
+                                    <input type="tel" id="prov-telefono" class="form-control form-control-sm bg-dark text-light border-secondary" required>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label text-warning small fw-bold mb-1">Categoría de Insumo</label>
+                                <input type="text" id="prov-categoria" class="form-control form-control-sm bg-dark text-light border-secondary" placeholder="Ej: Lácteos, Harinas, Empaques...">
+                            </div>
+                            <div class="d-flex justify-content-end gap-2">
+                                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="ocultarFormProveedor()">Cancelar</button>
+                                <button type="submit" class="btn btn-sm btn-warning fw-bold">Guardar Proveedor</button>
+                            </div>
+                        </form>
                     </div>
-                </form>
+
+                    <!-- TABLA DE PROVEEDORES -->
+                    <div class="table-responsive">
+                        <table class="table table-dark-custom align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Nombre / Empresa</th>
+                                    <th>Teléfono</th>
+                                    <th>Categoría</th>
+                                    <th class="text-center">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabla-proveedores-body">
+                                <!-- Se renderiza dinámicamente -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- MODAL: REGISTRAR COMPRA -->
+    <!-- MODAL 2: REGISTRAR COMPRA -->
     <div class="modal fade" id="modalCompra" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-lg">
             <div class="modal-content modal-content-dark">
@@ -421,20 +471,19 @@
                 </div>
                 <form id="form-compra" onsubmit="guardarCompra(event)">
                     <div class="modal-body">
-                        <!-- DATOS GENERALES -->
                         <div class="row g-3 mb-3">
                             <div class="col-md-4">
                                 <label class="form-label text-warning small fw-bold">Fecha de Compra *</label>
                                 <input type="date" id="compra-fecha" class="form-control bg-dark text-light border-secondary" required>
                             </div>
                             <div class="col-md-4">
-                                <label class="form-label text-warning small fw-bold">Proveedor *</label>
+                                <label class="form-label text-warning small fw-bold">Nombre del Proveedor *</label>
                                 <select id="compra-proveedor" class="form-select bg-dark text-light border-secondary" required>
                                     <option value="">Cargando proveedores...</option>
                                 </select>
                             </div>
                             <div class="col-md-4">
-                                <label class="form-label text-warning small fw-bold">N° de Factura / Ticket *</label>
+                                <label class="form-label text-warning small fw-bold">N° Factura *</label>
                                 <input type="text" id="compra-factura" class="form-control bg-dark text-light border-secondary" placeholder="Ej: F-10492" required>
                             </div>
                         </div>
@@ -442,13 +491,12 @@
                         <hr class="border-secondary">
                         
                         <div class="d-flex justify-content-between align-items-center mb-2">
-                            <label class="form-label text-warning small fw-bold mb-0">Ítems / Insumos Comprados</label>
+                            <label class="form-label text-warning small fw-bold mb-0">Ítems / Productos Comprados</label>
                             <button type="button" class="btn btn-sm btn-outline-warning" onclick="agregarFilaCompra()">
                                 <i class="fa-solid fa-plus me-1"></i> Agregar Producto
                             </button>
                         </div>
 
-                        <!-- LISTA DESPLEGABLE CON AUTOCOMPLETADO DE PRODUCTOS -->
                         <datalist id="lista-productos-sugeridos">
                             <option value="Queso Mozzarella (Bloque 5kg)">
                             <option value="Harina de Trigo Especial (Saco 25kg)">
@@ -472,26 +520,24 @@
                                     </tr>
                                 </thead>
                                 <tbody id="tabla-items-compra">
-                                    <!-- Las filas se agregan dinámicamente -->
                                 </tbody>
                             </table>
                         </div>
 
                         <div class="d-flex justify-content-end align-items-center bg-dark p-3 rounded border border-secondary">
-                            <span class="fs-5 me-3 text-secondary">TOTAL FACTURA:</span>
+                            <span class="fs-5 me-3 text-secondary">TOTAL COMPRA:</span>
                             <span class="fs-3 fw-bold text-warning" id="compra-total-gral">$0.00</span>
                         </div>
                     </div>
                     <div class="modal-footer border-secondary">
                         <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
-                        <button type="submit" class="btn btn-warning fw-bold">Guardar y Registrar Compra</button>
+                        <button type="submit" class="btn btn-warning fw-bold">Guardar Compra</button>
                     </div>
                 </form>
             </div>
         </div>
     </div>
 
-    <!-- SCRIPT JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         function handleLogin(event) {
@@ -614,57 +660,119 @@
             });
         }
 
-        // =======================
-        // LÓGICA DE PROVEEDORES Y COMPRAS
-        // =======================
+        // ==========================================
+        // PROVEEDORES, COMPRAS E INVENTARIO INTEGRADO
+        // ==========================================
         let proveedores = [
-            { id: 1, nombre: 'Distribuidora San Miguel (Quesos)', telefono: '7888-9999' },
-            { id: 2, nombre: 'Molinos de El Salvador (Harinas)', telefono: '7123-4567' },
-            { id: 3, nombre: 'Empaques Aguilares', telefono: '7671-0000' }
+            { id: 1, nombre: 'Distribuidora San Miguel', telefono: '7888-9999', categoria: 'Lácteos / Quesos' },
+            { id: 2, nombre: 'Molinos de El Salvador', telefono: '7123-4567', categoria: 'Harinas' },
+            { id: 3, nombre: 'Empaques Aguilares', telefono: '7671-0000', categoria: 'Empaques' }
         ];
 
         let comprasHistorial = [];
+        let inventarioStock = {};
         let filaItemCount = 0;
 
         document.addEventListener("DOMContentLoaded", () => {
-            // Cargar fecha actual por defecto
             const hoy = new Date().toISOString().split('T')[0];
             const elFecha = document.getElementById('compra-fecha');
             if(elFecha) elFecha.value = hoy;
 
             actualizarSelectProveedores();
             agregarFilaCompra();
+            renderInventario();
         });
 
+        /* --- PROVEEDORES --- */
         function actualizarSelectProveedores() {
             const select = document.getElementById('compra-proveedor');
             if(!select) return;
             select.innerHTML = '<option value="">-- Seleccionar Proveedor --</option>';
             proveedores.forEach(p => {
-                select.innerHTML += `<option value="${p.nombre}">${p.nombre} (${p.telefono})</option>`;
+                select.innerHTML += `<option value="${p.nombre}">${p.nombre}</option>`;
             });
+        }
+
+        function renderTablaProveedores() {
+            const tbody = document.getElementById('tabla-proveedores-body');
+            tbody.innerHTML = '';
+
+            if (proveedores.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">No hay proveedores registrados.</td></tr>';
+                return;
+            }
+
+            proveedores.forEach(p => {
+                tbody.innerHTML += `
+                    <tr>
+                        <td class="fw-bold">${p.nombre}</td>
+                        <td>${p.telefono}</td>
+                        <td><span class="badge bg-secondary">${p.categoria || 'General'}</span></td>
+                        <td class="text-center">
+                            <button class="btn btn-sm btn-outline-warning me-1" onclick="editarProveedor(${p.id})"><i class="fa-solid fa-pen"></i></button>
+                            <button class="btn btn-sm btn-outline-danger" onclick="eliminarProveedor(${p.id})"><i class="fa-solid fa-trash"></i></button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        function mostrarFormNuevoProveedor() {
+            document.getElementById('form-proveedor').reset();
+            document.getElementById('prov-id').value = '';
+            document.getElementById('titulo-form-proveedor').innerText = 'Agregar Nuevo Proveedor';
+            document.getElementById('contenedor-form-proveedor').classList.remove('d-none');
+        }
+
+        function ocultarFormProveedor() {
+            document.getElementById('contenedor-form-proveedor').classList.add('d-none');
         }
 
         function guardarProveedor(e) {
             e.preventDefault();
+            const id = document.getElementById('prov-id').value;
             const nombre = document.getElementById('prov-nombre').value;
             const telefono = document.getElementById('prov-telefono').value;
-            
-            proveedores.push({ id: Date.now(), nombre, telefono });
+            const categoria = document.getElementById('prov-categoria').value;
+
+            if (id) {
+                let p = proveedores.find(item => item.id == id);
+                if (p) {
+                    p.nombre = nombre;
+                    p.telefono = telefono;
+                    p.categoria = categoria;
+                }
+            } else {
+                proveedores.push({ id: Date.now(), nombre, telefono, categoria });
+            }
+
             actualizarSelectProveedores();
-
-            // Seleccionar automáticamente el proveedor recién guardado
-            document.getElementById('compra-proveedor').value = nombre;
-
-            // Cerrar Modal
-            const modalEl = document.getElementById('modalProveedor');
-            const modal = bootstrap.Modal.getInstance(modalEl);
-            modal.hide();
-
-            document.getElementById('form-proveedor').reset();
-            alert('¡Proveedor agregado con éxito!');
+            renderTablaProveedores();
+            ocultarFormProveedor();
         }
 
+        function editarProveedor(id) {
+            let p = proveedores.find(item => item.id == id);
+            if (!p) return;
+
+            document.getElementById('prov-id').value = p.id;
+            document.getElementById('prov-nombre').value = p.nombre;
+            document.getElementById('prov-telefono').value = p.telefono;
+            document.getElementById('prov-categoria').value = p.categoria || '';
+
+            document.getElementById('titulo-form-proveedor').innerText = 'Editar Proveedor';
+            document.getElementById('contenedor-form-proveedor').classList.remove('d-none');
+        }
+
+        function eliminarProveedor(id) {
+            if (confirm('¿Deseas eliminar este proveedor?')) {
+                proveedores = proveedores.filter(p => p.id != id);
+                actualizarSelectProveedores();
+                renderTablaProveedores();
+            }
+        }
+
+        /* --- FILAS DE COMPRA --- */
         function agregarFilaCompra() {
             filaItemCount++;
             const tbody = document.getElementById('tabla-items-compra');
@@ -674,7 +782,7 @@
             tr.id = rowId;
             tr.innerHTML = `
                 <td>
-                    <input type="text" list="lista-productos-sugeridos" class="form-control bg-dark text-light border-secondary item-nombre" placeholder="Escribe para buscar o agregar insumo..." required>
+                    <input type="text" list="lista-productos-sugeridos" class="form-control bg-dark text-light border-secondary item-nombre" placeholder="Nombre o insumo..." required>
                 </td>
                 <td>
                     <input type="number" min="1" value="1" class="form-control bg-dark text-light border-secondary text-center item-cant" oninput="calcularTotalCompra()" required>
@@ -716,6 +824,7 @@
             document.getElementById('compra-total-gral').innerText = `$${totalGeneral.toFixed(2)}`;
         }
 
+        /* --- GUARDAR COMPRA E INTEGRAR A INVENTARIO --- */
         function guardarCompra(e) {
             e.preventDefault();
             const fecha = document.getElementById('compra-fecha').value;
@@ -723,34 +832,32 @@
             const factura = document.getElementById('compra-factura').value;
 
             const rows = document.querySelectorAll('#tabla-items-compra tr');
-            let totalItems = 0;
             let totalGeneral = 0;
 
             rows.forEach(row => {
+                const nombre = row.querySelector('.item-nombre').value.trim();
                 const cant = parseFloat(row.querySelector('.item-cant').value) || 0;
                 const precio = parseFloat(row.querySelector('.item-precio').value) || 0;
-                totalItems += cant;
+
                 totalGeneral += (cant * precio);
+
+                // INTEGRACIÓN AUTOMÁTICA AL MODULO DE INVENTARIO
+                if (nombre) {
+                    if (!inventarioStock[nombre]) {
+                        inventarioStock[nombre] = { cantidad: 0, ultimoPrecio: 0 };
+                    }
+                    inventarioStock[nombre].cantidad += cant;
+                    inventarioStock[nombre].ultimoPrecio = precio;
+                }
             });
 
-            // Guardar en tabla
-            const tbody = document.getElementById('tabla-compras-body');
-            if(comprasHistorial.length === 0) tbody.innerHTML = '';
-
+            // Guardar registro de compra
             comprasHistorial.push({ fecha, factura, proveedor, totalGeneral });
 
-            tbody.innerHTML += `
-                <tr>
-                    <td>${fecha}</td>
-                    <td><span class="badge bg-secondary">${factura}</span></td>
-                    <td>${proveedor}</td>
-                    <td class="text-center">${totalItems} u.</td>
-                    <td class="text-end fw-bold text-warning">$${totalGeneral.toFixed(2)}</td>
-                    <td class="text-center"><span class="badge bg-success">Completado</span></td>
-                </tr>
-            `;
+            renderTablaCompras(comprasHistorial);
+            renderInventario();
 
-            // Limpiar Modal
+            // Cerrar Modal
             const modalEl = document.getElementById('modalCompra');
             const modal = bootstrap.Modal.getInstance(modalEl);
             modal.hide();
@@ -759,7 +866,74 @@
             document.getElementById('tabla-items-compra').innerHTML = '';
             agregarFilaCompra();
 
-            alert('¡Compra registrada e ingresada al inventario con éxito!');
+            alert('¡Compra registrada e ingresada al Inventario con éxito!');
+        }
+
+        /* --- RENDER Y FILTRADO DE COMPRAS --- */
+        function renderTablaCompras(lista) {
+            const tbody = document.getElementById('tabla-compras-body');
+            tbody.innerHTML = '';
+
+            if (lista.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-4">No se encontraron facturas registradas.</td></tr>';
+                return;
+            }
+
+            lista.forEach(c => {
+                tbody.innerHTML += `
+                    <tr>
+                        <td>${c.fecha}</td>
+                        <td><span class="badge bg-secondary">${c.factura}</span></td>
+                        <td class="fw-bold">${c.proveedor}</td>
+                        <td class="text-end fw-bold text-warning">$${c.totalGeneral.toFixed(2)}</td>
+                    </tr>
+                `;
+            });
+        }
+
+        function filtrarCompras() {
+            const valFecha = document.getElementById('filtro-fecha').value;
+            const valProv = document.getElementById('filtro-proveedor').value.toLowerCase().trim();
+
+            let filtradas = comprasHistorial.filter(c => {
+                let coincideFecha = valFecha ? c.fecha === valFecha : true;
+                let coincideProv = valProv ? c.proveedor.toLowerCase().includes(valProv) : true;
+                return coincideFecha && coincideProv;
+            });
+
+            renderTablaCompras(filtradas);
+        }
+
+        function limpiarFiltrosCompras() {
+            document.getElementById('filtro-fecha').value = '';
+            document.getElementById('filtro-proveedor').value = '';
+            renderTablaCompras(comprasHistorial);
+        }
+
+        /* --- RENDERIZAR TABLA DE INVENTARIO --- */
+        function renderInventario() {
+            const tbody = document.getElementById('tabla-inventario-body');
+            if (!tbody) return;
+
+            tbody.innerHTML = '';
+            const items = Object.keys(inventarioStock);
+
+            if (items.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-4">No hay insumos registrados. Ingresa una compra para alimentar el inventario.</td></tr>';
+                return;
+            }
+
+            items.forEach(nombre => {
+                const data = inventarioStock[nombre];
+                tbody.innerHTML += `
+                    <tr>
+                        <td class="fw-bold text-light">${nombre}</td>
+                        <td class="text-center"><span class="badge bg-warning text-dark fs-6">${data.cantidad} u.</span></td>
+                        <td class="text-end fw-bold text-warning">$${data.ultimoPrecio.toFixed(2)}</td>
+                        <td class="text-center"><span class="badge bg-success">En Stock</span></td>
+                    </tr>
+                `;
+            });
         }
     </script>
 </body>
