@@ -119,19 +119,28 @@
         .btn-cobrar:hover {
             background-color: #e0a800;
         }
+
+        /* REGLA CSS DE TABLAS: ALTA LEGIBILIDAD EN FONDOS CLAROS/BLANCOS Y OSCUROS */
         .table-dark-custom {
-            color: #ffffff !important;
+            background-color: #ffffff !important;
+            color: #111111 !important;
+            border-radius: 6px;
+            overflow: hidden;
         }
         .table-dark-custom th {
             color: var(--accent-yellow) !important;
-            font-weight: 600;
-            border-bottom: 1px solid #333;
-            background-color: #181818;
+            font-weight: 700;
+            border-bottom: 2px solid var(--accent-yellow);
+            background-color: #181818 !important;
+            padding: 12px;
         }
         .table-dark-custom td {
-            border-bottom: 1px solid #222;
+            border-bottom: 1px solid #e0e0e0 !important;
             vertical-align: middle;
-            color: #ffffff !important;
+            color: #111111 !important;
+            font-weight: 600;
+            background-color: #ffffff !important;
+            padding: 10px 12px;
         }
         .modal-content-dark {
             background-color: var(--card-dark);
@@ -310,7 +319,6 @@
                     </div>
                 </div>
 
-                <!-- RESUMEN DE SALDOS EDITABLE -->
                 <div class="row g-3 mb-3">
                     <div class="col-md-2">
                         <div class="metric-card text-center">
@@ -354,7 +362,6 @@
                 </div>
 
                 <div class="row g-3">
-                    <!-- VENTAS DEL DÍA -->
                     <div class="col-md-7">
                         <div class="card card-custom p-3">
                             <h6 class="text-warning fw-bold mb-3"><i class="fa-solid fa-cart-shopping me-2"></i>Ventas del Día</h6>
@@ -375,7 +382,6 @@
                         </div>
                     </div>
 
-                    <!-- GASTOS DEL DÍA -->
                     <div class="col-md-5">
                         <div class="card card-custom p-3">
                             <h6 class="text-warning fw-bold mb-3"><i class="fa-solid fa-file-invoice-dollar me-2"></i>Gastos del Día</h6>
@@ -553,7 +559,7 @@
         </div>
     </div>
 
-    <!-- MODAL: PLATILLO / RECETA MEJORADO CON TABLA DE INGREDIENTES -->
+    <!-- MODAL: PLATILLO / RECETA -->
     <div class="modal fade" id="modalPlatillo" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-lg">
             <div class="modal-content modal-content-dark">
@@ -587,7 +593,6 @@
 
                         <hr class="border-secondary">
 
-                        <!-- TABLA DINÁMICA DE INSUMOS/INGREDIENTES DEL PLATILLO -->
                         <div class="d-flex justify-content-between align-items-center mb-2">
                             <label class="form-label text-warning small fw-bold mb-0"><i class="fa-solid fa-boxes-stacked me-1"></i>Insumos / Ingredientes de la Receta</label>
                             <button type="button" class="btn btn-sm btn-outline-warning" onclick="agregarFilaIngrediente()">
@@ -606,7 +611,6 @@
                                     </tr>
                                 </thead>
                                 <tbody id="tabla-ingredientes-receta">
-                                    <!-- Filas dinámicas -->
                                 </tbody>
                             </table>
                         </div>
@@ -1006,14 +1010,14 @@
                 total += subtotal;
                 tbody.innerHTML += `
                     <tr>
-                        <td class="text-light fw-bold">${item.nombre}</td>
+                        <td class="fw-bold" style="color: #111111 !important;">${item.nombre}</td>
                         <td class="text-center">
                             <button class="btn btn-sm btn-outline-secondary py-0 px-1" onclick="changeQty('${item.nombre}', -1)">-</button>
-                            <span class="mx-1">${item.cantidad}</span>
+                            <span class="mx-1 fw-bold">${item.cantidad}</span>
                             <button class="btn btn-sm btn-outline-secondary py-0 px-1" onclick="changeQty('${item.nombre}', 1)">+</button>
                         </td>
-                        <td class="text-end">$${item.precio.toFixed(2)}</td>
-                        <td class="text-end text-warning fw-bold">$${subtotal.toFixed(2)}</td>
+                        <td class="text-end" style="color: #111111 !important;">$${item.precio.toFixed(2)}</td>
+                        <td class="text-end fw-bold text-dark">$${subtotal.toFixed(2)}</td>
                         <td class="text-center">
                             <button class="btn btn-sm btn-outline-danger py-0 px-1" onclick="removeItem('${item.nombre}')">×</button>
                         </td>
@@ -1051,7 +1055,7 @@
             renderCajaChica();
         }
 
-        /* --- MENÚ & RECETAS MEJORADO CON TABLA DE INGREDIENTES --- */
+        /* --- MENÚ & RECETAS --- */
         function renderMenu() {
             const tbody = document.getElementById('tabla-menu-body');
             tbody.innerHTML = '';
@@ -1070,9 +1074,9 @@
                 tbody.innerHTML += `
                     <tr>
                         <td><span class="badge bg-secondary">${item.categoria}</span></td>
-                        <td class="fw-bold text-light fs-6">${item.nombre}</td>
-                        <td class="text-secondary small">${textoInsumos}</td>
-                        <td class="text-end fw-bold text-warning fs-6">$${item.precio.toFixed(2)}</td>
+                        <td class="fw-bold fs-6" style="color: #111111 !important;">${item.nombre}</td>
+                        <td class="text-muted small">${textoInsumos}</td>
+                        <td class="text-end fw-bold fs-6 text-dark">$${item.precio.toFixed(2)}</td>
                         <td class="text-center">
                             <button class="btn btn-sm btn-outline-warning me-1" onclick="editarPlatillo(${index})"><i class="fa-solid fa-pen"></i></button>
                             <button class="btn btn-sm btn-outline-danger" onclick="eliminarPlatillo(${index})"><i class="fa-solid fa-trash"></i></button>
@@ -1200,7 +1204,7 @@
             }
         }
 
-        /* --- CAJA CHICA CON SALDO INICIAL EDITABLE --- */
+        /* --- CAJA CHICA --- */
         function renderCajaChica() {
             const fechaFiltro = document.getElementById('caja-filtro-fecha').value;
             const saldoInicial = parseFloat(document.getElementById('caja-saldo-inicial-input').value) || 0;
@@ -1224,9 +1228,9 @@
 
                     tVentasBody.innerHTML += `
                         <tr>
-                            <td>${v.hora} <span class="badge bg-secondary ms-1">${v.id}</span></td>
+                            <td style="color: #111111 !important;">${v.hora} <span class="badge bg-secondary ms-1">${v.id}</span></td>
                             <td><span class="badge ${v.metodo === 'EFECTIVO' ? 'bg-success' : (v.metodo === 'TARJETA' ? 'bg-info' : 'bg-primary')}">${v.metodo}</span></td>
-                            <td class="text-end fw-bold text-warning">$${v.monto.toFixed(2)}</td>
+                            <td class="text-end fw-bold text-dark">$${v.monto.toFixed(2)}</td>
                         </tr>
                     `;
                 });
@@ -1245,7 +1249,7 @@
                     totalGastos += g.monto;
                     tGastosBody.innerHTML += `
                         <tr>
-                            <td class="text-light">${g.concepto}</td>
+                            <td style="color: #111111 !important;">${g.concepto}</td>
                             <td class="text-end fw-bold text-danger">-$${g.monto.toFixed(2)}</td>
                         </tr>
                     `;
@@ -1330,11 +1334,11 @@
             inventarioStock.forEach((item, index) => {
                 tbody.innerHTML += `
                     <tr>
-                        <td class="fw-bold text-warning fs-6">${item.nombre}</td>
+                        <td class="fw-bold fs-6" style="color: #111111 !important;">${item.nombre}</td>
                         <td><span class="badge bg-secondary">${item.categoria}</span></td>
                         <td class="text-center"><span class="badge bg-warning text-dark fs-6">${item.cantidad}</span></td>
-                        <td class="text-center text-secondary">${item.unidad}</td>
-                        <td class="text-end fw-bold text-warning fs-6">$${item.ultimoPrecio.toFixed(2)}</td>
+                        <td class="text-center text-dark">${item.unidad}</td>
+                        <td class="text-end fw-bold fs-6 text-dark">$${item.ultimoPrecio.toFixed(2)}</td>
                         <td class="text-center">
                             <button class="btn btn-sm btn-outline-warning me-1" onclick="editarInsumo(${index})"><i class="fa-solid fa-pen"></i></button>
                             <button class="btn btn-sm btn-outline-danger" onclick="eliminarInsumo(${index})"><i class="fa-solid fa-trash"></i></button>
@@ -1432,8 +1436,8 @@
             proveedores.forEach(p => {
                 tbody.innerHTML += `
                     <tr>
-                        <td class="fw-bold text-light">${p.nombre}</td>
-                        <td>${p.telefono}</td>
+                        <td class="fw-bold text-dark">${p.nombre}</td>
+                        <td class="text-dark">${p.telefono}</td>
                         <td><span class="badge bg-secondary">${p.categoria || 'General'}</span></td>
                         <td class="text-center">
                             <button class="btn btn-sm btn-outline-warning me-1" onclick="editarProveedor(${p.id})"><i class="fa-solid fa-pen"></i></button>
@@ -1516,7 +1520,7 @@
                 <td>
                     <input type="number" step="0.01" min="0" value="0.00" class="form-control bg-dark text-light border-secondary text-end item-precio" oninput="calcularTotalCompra()" required>
                 </td>
-                <td class="text-end fw-bold text-warning item-subtotal">$0.00</td>
+                <td class="text-end fw-bold text-dark item-subtotal">$0.00</td>
                 <td class="text-center">
                     <button type="button" class="btn btn-sm btn-outline-danger" onclick="eliminarFilaCompra('${rowId}')">×</button>
                 </td>
@@ -1611,10 +1615,10 @@
             lista.forEach(c => {
                 tbody.innerHTML += `
                     <tr>
-                        <td>${c.fecha}</td>
+                        <td style="color: #111111 !important;">${c.fecha}</td>
                         <td><span class="badge bg-secondary">${c.factura}</span></td>
-                        <td class="fw-bold text-light">${c.proveedor}</td>
-                        <td class="text-end fw-bold text-warning">$${c.totalGeneral.toFixed(2)}</td>
+                        <td class="fw-bold" style="color: #111111 !important;">${c.proveedor}</td>
+                        <td class="text-end fw-bold text-dark">$${c.totalGeneral.toFixed(2)}</td>
                     </tr>
                 `;
             });
