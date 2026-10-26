@@ -120,16 +120,18 @@
             background-color: #e0a800;
         }
         .table-dark-custom {
-            color: #ccc;
+            color: #e0e0e0;
         }
         .table-dark-custom th {
-            color: #888;
+            color: var(--accent-yellow);
             font-weight: 600;
             border-bottom: 1px solid #333;
+            background-color: #181818;
         }
         .table-dark-custom td {
             border-bottom: 1px solid #222;
             vertical-align: middle;
+            color: #f8f9fa;
         }
         .modal-content-dark {
             background-color: var(--card-dark);
@@ -184,7 +186,7 @@
         </nav>
 
         <div class="container-fluid mt-3 px-4">
-            <!-- NAVEGACIÓN DE MÓDULOS -->
+            <!-- NAVEGACIÓN -->
             <div class="row mb-3 g-2">
                 <div class="col">
                     <div class="card card-custom module-card text-center p-2 active" id="btn-pos" onclick="showSection('pos')">
@@ -300,22 +302,33 @@
                 </div>
             </div>
 
-            <!-- 3. INVENTARIO / STOCK -->
+            <!-- 3. INVENTARIO / STOCK DE INSUMOS -->
             <div id="section-inventario" class="app-section">
-                <div class="card card-custom p-4">
-                    <h5 class="text-warning mb-3 fw-bold"><i class="fa-solid fa-boxes-stacked me-2"></i>Inventario / Stock de Insumos</h5>
+                <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+                    <div>
+                        <h4 class="text-warning fw-bold mb-0"><i class="fa-solid fa-boxes-stacked me-2"></i>Inventario / Stock de Insumos</h4>
+                        <small class="text-secondary">Administración de materia prima, stock y unidades de medida.</small>
+                    </div>
+                    <button class="btn btn-warning fw-bold" onclick="mostrarModalInsumo()">
+                        <i class="fa-solid fa-plus me-1"></i> Nuevo Insumo / Producto
+                    </button>
+                </div>
+
+                <div class="card card-custom p-3">
                     <div class="table-responsive">
                         <table class="table table-dark-custom align-middle">
                             <thead>
                                 <tr>
                                     <th>Insumo / Producto</th>
+                                    <th>Categoría</th>
                                     <th class="text-center">Stock Actual</th>
+                                    <th class="text-center">Unidad</th>
                                     <th class="text-end">Último Precio Compra</th>
-                                    <th class="text-center">Estado</th>
+                                    <th class="text-center">Acciones</th>
                                 </tr>
                             </thead>
                             <tbody id="tabla-inventario-body">
-                                <!-- Se alimenta automáticamente de las compras -->
+                                <!-- Contenido alimentado por JS -->
                             </tbody>
                         </table>
                     </div>
@@ -338,7 +351,6 @@
                         <small class="text-secondary">Registro de facturas, insumos entrantes y proveedores.</small>
                     </div>
                     <div>
-                        <!-- BOTÓN PROVEEDORES QUE MUESTRA LA LISTA -->
                         <button class="btn btn-outline-warning me-2 fw-bold" data-bs-toggle="modal" data-bs-target="#modalProveedores" onclick="renderTablaProveedores()">
                             <i class="fa-solid fa-users me-1"></i> Proveedores
                         </button>
@@ -353,7 +365,6 @@
                     <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
                         <h6 class="text-warning mb-0 fw-bold"><i class="fa-solid fa-list me-2"></i>Historial de Facturas de Compra</h6>
                         
-                        <!-- FILTROS POR FECHA Y NOMBRE DEL PROVEEDOR -->
                         <div class="d-flex gap-2 align-items-center flex-wrap">
                             <div>
                                 <input type="date" id="filtro-fecha" class="form-control form-control-sm bg-dark text-light border-secondary" onchange="filtrarCompras()" title="Filtrar por Fecha">
@@ -367,7 +378,6 @@
                         </div>
                     </div>
 
-                    <!-- TABLA CON COLUMNAS: FECHA, FACTURA, PROVEEDOR Y MONTO -->
                     <div class="table-responsive">
                         <table class="table table-dark-custom align-middle mb-0">
                             <thead>
@@ -398,7 +408,66 @@
         </div>
     </div>
 
-    <!-- MODAL 1: LISTA DE PROVEEDORES (EDITAR, ELIMINAR Y AGREGAR) -->
+    <!-- MODAL: AGREGAR / EDITAR INSUMO DE INVENTARIO -->
+    <div class="modal fade" id="modalInsumo" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content modal-content-dark">
+                <div class="modal-header border-secondary">
+                    <h5 class="modal-title text-warning fw-bold" id="titulo-modal-insumo"><i class="fa-solid fa-box-open me-2"></i>Nuevo Insumo / Producto</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <form id="form-insumo" onsubmit="guardarInsumo(event)">
+                    <input type="hidden" id="insumo-id-original">
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label text-warning small fw-bold">Nombre del Insumo / Producto *</label>
+                            <input type="text" id="insumo-nombre" class="form-control bg-dark text-light border-secondary" placeholder="Ej: Queso Mozzarella" required>
+                        </div>
+                        <div class="row g-2 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label text-warning small fw-bold">Unidad de Medida *</label>
+                                <select id="insumo-unidad" class="form-select bg-dark text-light border-secondary" required>
+                                    <option value="Bloque / Kg">Bloque / Kg</option>
+                                    <option value="Libras">Libras</option>
+                                    <option value="Unidades">Unidades (u.)</option>
+                                    <option value="Saco 25kg">Saco 25kg</option>
+                                    <option value="Lata / Galón">Lata / Galón</option>
+                                    <option value="Caja / Paquete">Caja / Paquete</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label text-warning small fw-bold">Categoría *</label>
+                                <select id="insumo-categoria" class="form-select bg-dark text-light border-secondary" required>
+                                    <option value="Lácteos / Quesos">Lácteos / Quesos</option>
+                                    <option value="Harinas / Masas">Harinas / Masas</option>
+                                    <option value="Embutidos / Carnes">Embutidos / Carnes</option>
+                                    <option value="Salsas / Condimentos">Salsas / Condimentos</option>
+                                    <option value="Empaques / Cajas">Empaques / Cajas</option>
+                                    <option value="Bebidas / Otros">Bebidas / Otros</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row g-2 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label text-warning small fw-bold">Stock Inicial / Actual</label>
+                                <input type="number" step="0.01" min="0" id="insumo-stock" class="form-control bg-dark text-light border-secondary" value="0">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label text-warning small fw-bold">Precio Unitario Ref. ($)</label>
+                                <input type="number" step="0.01" min="0" id="insumo-precio" class="form-control bg-dark text-light border-secondary" value="0.00">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer border-secondary">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-warning fw-bold">Guardar Insumo</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: LISTA DE PROVEEDORES -->
     <div class="modal fade" id="modalProveedores" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-lg">
             <div class="modal-content modal-content-dark">
@@ -414,7 +483,6 @@
                         </button>
                     </div>
 
-                    <!-- FORMULARIO AGREGAR / EDITAR PROVEEDOR (OCULTO POR DEFECTO) -->
                     <div id="contenedor-form-proveedor" class="p-3 bg-dark rounded border border-warning mb-3 d-none">
                         <h6 class="text-warning fw-bold mb-3" id="titulo-form-proveedor">Nuevo Proveedor</h6>
                         <form id="form-proveedor" onsubmit="guardarProveedor(event)">
@@ -440,7 +508,6 @@
                         </form>
                     </div>
 
-                    <!-- TABLA DE PROVEEDORES -->
                     <div class="table-responsive">
                         <table class="table table-dark-custom align-middle mb-0">
                             <thead>
@@ -452,7 +519,6 @@
                                 </tr>
                             </thead>
                             <tbody id="tabla-proveedores-body">
-                                <!-- Se renderiza dinámicamente -->
                             </tbody>
                         </table>
                     </div>
@@ -461,7 +527,7 @@
         </div>
     </div>
 
-    <!-- MODAL 2: REGISTRAR COMPRA -->
+    <!-- MODAL: REGISTRAR COMPRA -->
     <div class="modal fade" id="modalCompra" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-lg">
             <div class="modal-content modal-content-dark">
@@ -497,15 +563,9 @@
                             </button>
                         </div>
 
+                        <!-- LISTA DESPLEGABLE DINÁMICA DE INSUMOS -->
                         <datalist id="lista-productos-sugeridos">
-                            <option value="Queso Mozzarella (Bloque 5kg)">
-                            <option value="Harina de Trigo Especial (Saco 25kg)">
-                            <option value="Pepperoni Rebanado (Caja 3kg)">
-                            <option value="Salsa de Tomate Base (Lata 4kg)">
-                            <option value="Cajas para Pizza Mediana (Paq 100u)">
-                            <option value="Cajas para Pizza Grande (Paq 100u)">
-                            <option value="Jamón Superior (Caja 5kg)">
-                            <option value="Aceite de Oliva (Galón)">
+                            <!-- Se alimenta en tiempo real de la lista de Inventario -->
                         </datalist>
 
                         <div class="table-responsive mb-3">
@@ -619,7 +679,7 @@
                 total += subtotal;
                 tbody.innerHTML += `
                     <tr>
-                        <td>${item.nombre}</td>
+                        <td class="text-light">${item.nombre}</td>
                         <td class="text-center">
                             <button class="btn btn-sm btn-outline-secondary py-0 px-1" onclick="changeQty(${item.id}, -1)">-</button>
                             <span class="mx-1">${item.cantidad}</span>
@@ -661,7 +721,7 @@
         }
 
         // ==========================================
-        // PROVEEDORES, COMPRAS E INVENTARIO INTEGRADO
+        // PROVEEDORES, COMPRAS E INVENTARIO SISTEMÁTICO
         // ==========================================
         let proveedores = [
             { id: 1, nombre: 'Distribuidora San Miguel', telefono: '7888-9999', categoria: 'Lácteos / Quesos' },
@@ -669,8 +729,13 @@
             { id: 3, nombre: 'Empaques Aguilares', telefono: '7671-0000', categoria: 'Empaques' }
         ];
 
+        let inventarioStock = [
+            { nombre: 'Queso Mozzarella (Bloque 5kg)', unidad: 'Bloque / Kg', categoria: 'Lácteos / Quesos', cantidad: 25, ultimoPrecio: 0.75 },
+            { nombre: 'Harina de Trigo Especial (Saco 25kg)', unidad: 'Saco 25kg', categoria: 'Harinas / Masas', cantidad: 10, ultimoPrecio: 18.50 },
+            { nombre: 'Pepperoni Rebanado (Caja 3kg)', unidad: 'Caja / Paquete', categoria: 'Embutidos / Carnes', cantidad: 8, ultimoPrecio: 12.00 }
+        ];
+
         let comprasHistorial = [];
-        let inventarioStock = {};
         let filaItemCount = 0;
 
         document.addEventListener("DOMContentLoaded", () => {
@@ -681,7 +746,106 @@
             actualizarSelectProveedores();
             agregarFilaCompra();
             renderInventario();
+            actualizarDatalistProductos();
         });
+
+        /* --- GESTIÓN DE INVENTARIO --- */
+        function renderInventario() {
+            const tbody = document.getElementById('tabla-inventario-body');
+            if (!tbody) return;
+
+            tbody.innerHTML = '';
+
+            if (inventarioStock.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4">No hay insumos registrados en inventario.</td></tr>';
+                return;
+            }
+
+            inventarioStock.forEach((item, index) => {
+                tbody.innerHTML += `
+                    <tr>
+                        <td class="fw-bold text-warning">${item.nombre}</td>
+                        <td><span class="badge bg-secondary">${item.categoria}</span></td>
+                        <td class="text-center"><span class="badge bg-warning text-dark fs-6">${item.cantidad}</span></td>
+                        <td class="text-center text-secondary">${item.unidad}</td>
+                        <td class="text-end fw-bold text-warning">$${item.ultimoPrecio.toFixed(2)}</td>
+                        <td class="text-center">
+                            <button class="btn btn-sm btn-outline-warning me-1" onclick="editarInsumo(${index})"><i class="fa-solid fa-pen"></i></button>
+                            <button class="btn btn-sm btn-outline-danger" onclick="eliminarInsumo(${index})"><i class="fa-solid fa-trash"></i></button>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            actualizarDatalistProductos();
+        }
+
+        function mostrarModalInsumo() {
+            document.getElementById('form-insumo').reset();
+            document.getElementById('insumo-id-original').value = '';
+            document.getElementById('titulo-modal-insumo').innerHTML = '<i class="fa-solid fa-box-open me-2"></i>Nuevo Insumo / Producto';
+            
+            const modal = new bootstrap.Modal(document.getElementById('modalInsumo'));
+            modal.show();
+        }
+
+        function guardarInsumo(e) {
+            e.preventDefault();
+            const indexOriginal = document.getElementById('insumo-id-original').value;
+            const nombre = document.getElementById('insumo-nombre').value.trim();
+            const unidad = document.getElementById('insumo-unidad').value;
+            const categoria = document.getElementById('insumo-categoria').value;
+            const cantidad = parseFloat(document.getElementById('insumo-stock').value) || 0;
+            const ultimoPrecio = parseFloat(document.getElementById('insumo-precio').value) || 0;
+
+            if (indexOriginal !== '') {
+                inventarioStock[indexOriginal] = { nombre, unidad, categoria, cantidad, ultimoPrecio };
+            } else {
+                inventarioStock.push({ nombre, unidad, categoria, cantidad, ultimoPrecio });
+            }
+
+            renderInventario();
+
+            const modalEl = document.getElementById('modalInsumo');
+            const modal = bootstrap.Modal.getInstance(modalEl);
+            if(modal) modal.hide();
+
+            alert('¡Insumo guardado correctamente!');
+        }
+
+        function editarInsumo(index) {
+            const item = inventarioStock[index];
+            if (!item) return;
+
+            document.getElementById('insumo-id-original').value = index;
+            document.getElementById('insumo-nombre').value = item.nombre;
+            document.getElementById('insumo-unidad').value = item.unidad;
+            document.getElementById('insumo-categoria').value = item.categoria;
+            document.getElementById('insumo-stock').value = item.cantidad;
+            document.getElementById('insumo-precio').value = item.ultimoPrecio;
+
+            document.getElementById('titulo-modal-insumo').innerHTML = '<i class="fa-solid fa-pen-to-square me-2"></i>Editar Insumo';
+
+            const modal = new bootstrap.Modal(document.getElementById('modalInsumo'));
+            modal.show();
+        }
+
+        function eliminarInsumo(index) {
+            if (confirm('¿Estás seguro de eliminar este insumo del inventario?')) {
+                inventarioStock.splice(index, 1);
+                renderInventario();
+            }
+        }
+
+        function actualizarDatalistProductos() {
+            const datalist = document.getElementById('lista-productos-sugeridos');
+            if(!datalist) return;
+
+            datalist.innerHTML = '';
+            inventarioStock.forEach(item => {
+                datalist.innerHTML += `<option value="${item.nombre}">`;
+            });
+        }
 
         /* --- PROVEEDORES --- */
         function actualizarSelectProveedores() {
@@ -705,7 +869,7 @@
             proveedores.forEach(p => {
                 tbody.innerHTML += `
                     <tr>
-                        <td class="fw-bold">${p.nombre}</td>
+                        <td class="fw-bold text-light">${p.nombre}</td>
                         <td>${p.telefono}</td>
                         <td><span class="badge bg-secondary">${p.categoria || 'General'}</span></td>
                         <td class="text-center">
@@ -782,7 +946,7 @@
             tr.id = rowId;
             tr.innerHTML = `
                 <td>
-                    <input type="text" list="lista-productos-sugeridos" class="form-control bg-dark text-light border-secondary item-nombre" placeholder="Nombre o insumo..." required>
+                    <input type="text" list="lista-productos-sugeridos" class="form-control bg-dark text-light border-secondary item-nombre" placeholder="Seleccionar o escribir insumo..." required>
                 </td>
                 <td>
                     <input type="number" min="1" value="1" class="form-control bg-dark text-light border-secondary text-center item-cant" oninput="calcularTotalCompra()" required>
@@ -824,7 +988,7 @@
             document.getElementById('compra-total-gral').innerText = `$${totalGeneral.toFixed(2)}`;
         }
 
-        /* --- GUARDAR COMPRA E INTEGRAR A INVENTARIO --- */
+        /* --- GUARDAR COMPRA Y ACTUALIZAR STOCK Y DATALIST --- */
         function guardarCompra(e) {
             e.preventDefault();
             const fecha = document.getElementById('compra-fecha').value;
@@ -841,32 +1005,37 @@
 
                 totalGeneral += (cant * precio);
 
-                // INTEGRACIÓN AUTOMÁTICA AL MODULO DE INVENTARIO
                 if (nombre) {
-                    if (!inventarioStock[nombre]) {
-                        inventarioStock[nombre] = { cantidad: 0, ultimoPrecio: 0 };
+                    let existente = inventarioStock.find(i => i.nombre.toLowerCase() === nombre.toLowerCase());
+                    if (existente) {
+                        existente.cantidad += cant;
+                        existente.ultimoPrecio = precio;
+                    } else {
+                        inventarioStock.push({
+                            nombre: nombre,
+                            unidad: 'Unidades',
+                            categoria: 'Insumo de Compra',
+                            cantidad: cant,
+                            ultimoPrecio: precio
+                        });
                     }
-                    inventarioStock[nombre].cantidad += cant;
-                    inventarioStock[nombre].ultimoPrecio = precio;
                 }
             });
 
-            // Guardar registro de compra
             comprasHistorial.push({ fecha, factura, proveedor, totalGeneral });
 
             renderTablaCompras(comprasHistorial);
             renderInventario();
 
-            // Cerrar Modal
             const modalEl = document.getElementById('modalCompra');
             const modal = bootstrap.Modal.getInstance(modalEl);
-            modal.hide();
+            if(modal) modal.hide();
 
             document.getElementById('form-compra').reset();
             document.getElementById('tabla-items-compra').innerHTML = '';
             agregarFilaCompra();
 
-            alert('¡Compra registrada e ingresada al Inventario con éxito!');
+            alert('¡Compra registrada y Stock actualizado con éxito!');
         }
 
         /* --- RENDER Y FILTRADO DE COMPRAS --- */
@@ -884,7 +1053,7 @@
                     <tr>
                         <td>${c.fecha}</td>
                         <td><span class="badge bg-secondary">${c.factura}</span></td>
-                        <td class="fw-bold">${c.proveedor}</td>
+                        <td class="fw-bold text-light">${c.proveedor}</td>
                         <td class="text-end fw-bold text-warning">$${c.totalGeneral.toFixed(2)}</td>
                     </tr>
                 `;
@@ -908,32 +1077,6 @@
             document.getElementById('filtro-fecha').value = '';
             document.getElementById('filtro-proveedor').value = '';
             renderTablaCompras(comprasHistorial);
-        }
-
-        /* --- RENDERIZAR TABLA DE INVENTARIO --- */
-        function renderInventario() {
-            const tbody = document.getElementById('tabla-inventario-body');
-            if (!tbody) return;
-
-            tbody.innerHTML = '';
-            const items = Object.keys(inventarioStock);
-
-            if (items.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-4">No hay insumos registrados. Ingresa una compra para alimentar el inventario.</td></tr>';
-                return;
-            }
-
-            items.forEach(nombre => {
-                const data = inventarioStock[nombre];
-                tbody.innerHTML += `
-                    <tr>
-                        <td class="fw-bold text-light">${nombre}</td>
-                        <td class="text-center"><span class="badge bg-warning text-dark fs-6">${data.cantidad} u.</span></td>
-                        <td class="text-end fw-bold text-warning">$${data.ultimoPrecio.toFixed(2)}</td>
-                        <td class="text-center"><span class="badge bg-success">En Stock</span></td>
-                    </tr>
-                `;
-            });
         }
     </script>
 </body>
