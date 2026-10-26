@@ -120,10 +120,10 @@
             background-color: #e0a800;
         }
         .table-dark-custom {
-            color: #e0e0e0;
+            color: #ffffff !important;
         }
         .table-dark-custom th {
-            color: var(--accent-yellow);
+            color: var(--accent-yellow) !important;
             font-weight: 600;
             border-bottom: 1px solid #333;
             background-color: #181818;
@@ -131,7 +131,7 @@
         .table-dark-custom td {
             border-bottom: 1px solid #222;
             vertical-align: middle;
-            color: #f8f9fa;
+            color: #ffffff !important;
         }
         .modal-content-dark {
             background-color: var(--card-dark);
@@ -246,7 +246,6 @@
                                 <button class="btn btn-sm btn-outline-warning" onclick="filtrarPosCategoria('Extras', this)">🧀 Extras</button>
                             </div>
                             <div class="row g-2" id="grid-pos-productos">
-                                <!-- Platillos agregados dinámicamente -->
                             </div>
                         </div>
                     </div>
@@ -311,12 +310,15 @@
                     </div>
                 </div>
 
-                <!-- RESUMEN DE SALDOS -->
+                <!-- RESUMEN DE SALDOS EDITABLE -->
                 <div class="row g-3 mb-3">
                     <div class="col-md-2">
                         <div class="metric-card text-center">
-                            <small class="text-secondary d-block">Saldo Inicial</small>
-                            <span class="fs-5 fw-bold text-light" id="caja-saldo-inicial">$50.00</span>
+                            <small class="text-secondary d-block mb-1">Saldo Inicial</small>
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text bg-dark border-secondary text-warning">$</span>
+                                <input type="number" step="0.01" id="caja-saldo-inicial-input" class="form-control bg-dark text-warning fw-bold border-secondary text-center" value="50.00" oninput="renderCajaChica()">
+                            </div>
                         </div>
                     </div>
                     <div class="col-md-2">
@@ -432,7 +434,7 @@
                 <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
                     <div>
                         <h4 class="text-warning fw-bold mb-0"><i class="fa-solid fa-utensils me-2"></i>Menú & Recetas</h4>
-                        <small class="text-secondary">Configuración de platillos, precios y enlace de insumos.</small>
+                        <small class="text-secondary">Configuración de platillos, precios y receta detallada de insumos.</small>
                     </div>
                     <button class="btn btn-warning fw-bold" onclick="mostrarModalPlatillo()">
                         <i class="fa-solid fa-plus me-1"></i> Nuevo Platillo / Receta
@@ -452,7 +454,6 @@
                                 </tr>
                             </thead>
                             <tbody id="tabla-menu-body">
-                                <!-- Alimentado dinámicamente -->
                             </tbody>
                         </table>
                     </div>
@@ -552,38 +553,62 @@
         </div>
     </div>
 
-    <!-- MODAL: PLATILLO / MENU -->
+    <!-- MODAL: PLATILLO / RECETA MEJORADO CON TABLA DE INGREDIENTES -->
     <div class="modal fade" id="modalPlatillo" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog">
+        <div class="modal-dialog modal-lg">
             <div class="modal-content modal-content-dark">
                 <div class="modal-header border-secondary">
-                    <h5 class="modal-title text-warning fw-bold" id="titulo-modal-platillo"><i class="fa-solid fa-utensils me-2"></i>Nuevo Platillo</h5>
+                    <h5 class="modal-title text-warning fw-bold" id="titulo-modal-platillo"><i class="fa-solid fa-utensils me-2"></i>Nuevo Platillo / Receta</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <form id="form-platillo" onsubmit="guardarPlatillo(event)">
                     <input type="hidden" id="platillo-index-original">
                     <div class="modal-body">
-                        <div class="mb-3">
-                            <label class="form-label text-warning small fw-bold">Categoría *</label>
-                            <select id="platillo-categoria" class="form-select bg-dark text-light border-secondary" required>
-                                <option value="Pizzas">Pizzas</option>
-                                <option value="Entradas">Entradas</option>
-                                <option value="Bebidas">Bebidas</option>
-                                <option value="Postres">Postres</option>
-                                <option value="Extras">Extras</option>
-                            </select>
+                        <div class="row g-2 mb-3">
+                            <div class="col-md-4">
+                                <label class="form-label text-warning small fw-bold">Categoría *</label>
+                                <select id="platillo-categoria" class="form-select bg-dark text-light border-secondary" required>
+                                    <option value="Pizzas">Pizzas</option>
+                                    <option value="Entradas">Entradas</option>
+                                    <option value="Bebidas">Bebidas</option>
+                                    <option value="Postres">Postres</option>
+                                    <option value="Extras">Extras</option>
+                                </select>
+                            </div>
+                            <div class="col-md-5">
+                                <label class="form-label text-warning small fw-bold">Nombre del Platillo *</label>
+                                <input type="text" id="platillo-nombre" class="form-control bg-dark text-light border-secondary" placeholder="Ej: Pizza Pepperoni Grande" required>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label text-warning small fw-bold">Precio ($) *</label>
+                                <input type="number" step="0.01" min="0" id="platillo-precio" class="form-control bg-dark text-light border-secondary" placeholder="8.99" required>
+                            </div>
                         </div>
-                        <div class="mb-3">
-                            <label class="form-label text-warning small fw-bold">Nombre del Platillo *</label>
-                            <input type="text" id="platillo-nombre" class="form-control bg-dark text-light border-secondary" placeholder="Ej: Pizza Suprema Grande" required>
+
+                        <hr class="border-secondary">
+
+                        <!-- TABLA DINÁMICA DE INSUMOS/INGREDIENTES DEL PLATILLO -->
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <label class="form-label text-warning small fw-bold mb-0"><i class="fa-solid fa-boxes-stacked me-1"></i>Insumos / Ingredientes de la Receta</label>
+                            <button type="button" class="btn btn-sm btn-outline-warning" onclick="agregarFilaIngrediente()">
+                                <i class="fa-solid fa-plus me-1"></i> Agregar Ingrediente
+                            </button>
                         </div>
-                        <div class="mb-3">
-                            <label class="form-label text-warning small fw-bold">Precio de Venta ($) *</label>
-                            <input type="number" step="0.01" min="0" id="platillo-precio" class="form-control bg-dark text-light border-secondary" placeholder="10.99" required>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label text-warning small fw-bold">Insumos / Ingredientes Base</label>
-                            <input type="text" id="platillo-insumos" class="form-control bg-dark text-light border-secondary" placeholder="Ej: Queso Mozzarella, Pepperoni, Salsa Base">
+
+                        <div class="table-responsive mb-3">
+                            <table class="table table-dark-custom align-middle">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 45%;">Ingrediente / Insumo</th>
+                                        <th style="width: 25%;">Unidad</th>
+                                        <th style="width: 20%;" class="text-center">Cantidad</th>
+                                        <th style="width: 10%;" class="text-center">Acción</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tabla-ingredientes-receta">
+                                    <!-- Filas dinámicas -->
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                     <div class="modal-footer border-secondary">
@@ -845,7 +870,6 @@
             document.getElementById('login-pass').value = '';
         }
 
-        // BASE DE DATOS LOCAL SINCRO
         let proveedores = [
             { id: 1, nombre: 'Distribuidora San Miguel', telefono: '7888-9999', categoria: 'Lácteos / Quesos' },
             { id: 2, nombre: 'Molinos de El Salvador', telefono: '7123-4567', categoria: 'Harinas' },
@@ -853,16 +877,16 @@
         ];
 
         let inventarioStock = [
-            { nombre: 'Queso Mozzarella (Bloque 5kg)', unidad: 'Bloque / Kg', categoria: 'Lácteos / Quesos', cantidad: 25, ultimoPrecio: 0.75 },
-            { nombre: 'Harina de Trigo Especial (Saco 25kg)', unidad: 'Saco 25kg', categoria: 'Harinas / Masas', cantidad: 10, ultimoPrecio: 18.50 },
-            { nombre: 'Pepperoni Rebanado (Caja 3kg)', unidad: 'Caja / Paquete', categoria: 'Embutidos / Carnes', cantidad: 8, ultimoPrecio: 12.00 }
+            { nombre: 'Queso Mozzarella', unidad: 'Bloque / Kg', categoria: 'Lácteos / Quesos', cantidad: 25, ultimoPrecio: 0.75 },
+            { nombre: 'Harina de Trigo Especial', unidad: 'Saco 25kg', categoria: 'Harinas / Masas', cantidad: 10, ultimoPrecio: 18.50 },
+            { nombre: 'Pepperoni Rebanado', unidad: 'Caja / Paquete', categoria: 'Embutidos / Carnes', cantidad: 8, ultimoPrecio: 12.00 }
         ];
 
         let menuPlatillos = [
-            { categoria: 'Pizzas', nombre: 'Pizza Pepperoni Grande', precio: 8.99, insumos: 'Queso Mozzarella, Pepperoni' },
-            { categoria: 'Pizzas', nombre: 'Pizza Suprema Grande', precio: 10.99, insumos: 'Queso Mozzarella, Pepperoni, Jamón' },
-            { categoria: 'Entradas', nombre: 'Papas Fritas', precio: 3.50, insumos: 'Papas' },
-            { categoria: 'Bebidas', nombre: 'Soda 1.25L', precio: 2.00, insumos: 'Soda' }
+            { categoria: 'Pizzas', nombre: 'Pizza Pepperoni Grande', precio: 8.99, ingredientes: [{ insumo: 'Queso Mozzarella', unidad: 'Bloque / Kg', cantidad: 0.5 }, { insumo: 'Pepperoni Rebanado', unidad: 'Caja / Paquete', cantidad: 0.2 }] },
+            { categoria: 'Pizzas', nombre: 'Pizza Suprema Grande', precio: 10.99, ingredientes: [{ insumo: 'Queso Mozzarella', unidad: 'Bloque / Kg', cantidad: 0.6 }] },
+            { categoria: 'Entradas', nombre: 'Papas Fritas', precio: 3.50, ingredientes: [] },
+            { categoria: 'Bebidas', nombre: 'Soda 1.25L', precio: 2.00, ingredientes: [] }
         ];
 
         let ventasHistorial = [];
@@ -871,6 +895,7 @@
 
         let cart = [];
         let filaItemCount = 0;
+        let filaIngredienteCount = 0;
 
         document.addEventListener("DOMContentLoaded", () => {
             const hoy = new Date().toISOString().split('T')[0];
@@ -1026,7 +1051,7 @@
             renderCajaChica();
         }
 
-        /* --- MENÚ & RECETAS --- */
+        /* --- MENÚ & RECETAS MEJORADO CON TABLA DE INGREDIENTES --- */
         function renderMenu() {
             const tbody = document.getElementById('tabla-menu-body');
             tbody.innerHTML = '';
@@ -1037,12 +1062,17 @@
             }
 
             menuPlatillos.forEach((item, index) => {
+                let textoInsumos = 'Sin insumos';
+                if (item.ingredientes && item.ingredientes.length > 0) {
+                    textoInsumos = item.ingredientes.map(i => `${i.insumo} (${i.cantidad} ${i.unidad})`).join(', ');
+                }
+
                 tbody.innerHTML += `
                     <tr>
                         <td><span class="badge bg-secondary">${item.categoria}</span></td>
-                        <td class="fw-bold text-light">${item.nombre}</td>
-                        <td class="text-secondary small">${item.insumos || 'N/A'}</td>
-                        <td class="text-end fw-bold text-warning">$${item.precio.toFixed(2)}</td>
+                        <td class="fw-bold text-light fs-6">${item.nombre}</td>
+                        <td class="text-secondary small">${textoInsumos}</td>
+                        <td class="text-end fw-bold text-warning fs-6">$${item.precio.toFixed(2)}</td>
                         <td class="text-center">
                             <button class="btn btn-sm btn-outline-warning me-1" onclick="editarPlatillo(${index})"><i class="fa-solid fa-pen"></i></button>
                             <button class="btn btn-sm btn-outline-danger" onclick="eliminarPlatillo(${index})"><i class="fa-solid fa-trash"></i></button>
@@ -1057,9 +1087,52 @@
         function mostrarModalPlatillo() {
             document.getElementById('form-platillo').reset();
             document.getElementById('platillo-index-original').value = '';
-            document.getElementById('titulo-modal-platillo').innerHTML = '<i class="fa-solid fa-utensils me-2"></i>Nuevo Platillo';
+            document.getElementById('tabla-ingredientes-receta').innerHTML = '';
+            document.getElementById('titulo-modal-platillo').innerHTML = '<i class="fa-solid fa-utensils me-2"></i>Nuevo Platillo / Receta';
+            
+            agregarFilaIngrediente();
+
             const modal = new bootstrap.Modal(document.getElementById('modalPlatillo'));
             modal.show();
+        }
+
+        function agregarFilaIngrediente(data = null) {
+            filaIngredienteCount++;
+            const tbody = document.getElementById('tabla-ingredientes-receta');
+            const rowId = `ingrediente-row-${filaIngredienteCount}`;
+
+            let optionsInsumos = '<option value="">-- Seleccionar --</option>';
+            inventarioStock.forEach(inv => {
+                optionsInsumos += `<option value="${inv.nombre}">${inv.nombre}</option>`;
+            });
+
+            const tr = document.createElement('tr');
+            tr.id = rowId;
+            tr.innerHTML = `
+                <td>
+                    <select class="form-select form-select-sm bg-dark text-light border-secondary ing-nombre" required>
+                        ${optionsInsumos}
+                    </select>
+                </td>
+                <td>
+                    <input type="text" class="form-control form-control-sm bg-dark text-light border-secondary ing-unidad" placeholder="Kg, u., etc." value="${data ? data.unidad : ''}">
+                </td>
+                <td>
+                    <input type="number" step="0.01" min="0.01" value="${data ? data.cantidad : '1'}" class="form-control form-control-sm bg-dark text-light border-secondary text-center ing-cant" required>
+                </td>
+                <td class="text-center">
+                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="eliminarFilaIngrediente('${rowId}')">×</button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+
+            if (data && data.insumo) {
+                tr.querySelector('.ing-nombre').value = data.insumo;
+            }
+        }
+
+        function eliminarFilaIngrediente(rowId) {
+            document.getElementById(rowId).remove();
         }
 
         function guardarPlatillo(e) {
@@ -1068,12 +1141,24 @@
             const categoria = document.getElementById('platillo-categoria').value;
             const nombre = document.getElementById('platillo-nombre').value.trim();
             const precio = parseFloat(document.getElementById('platillo-precio').value) || 0;
-            const insumos = document.getElementById('platillo-insumos').value;
+
+            const rowsIng = document.querySelectorAll('#tabla-ingredientes-receta tr');
+            let ingredientesArr = [];
+
+            rowsIng.forEach(row => {
+                const insumo = row.querySelector('.ing-nombre').value;
+                const unidad = row.querySelector('.ing-unidad').value;
+                const cantidad = parseFloat(row.querySelector('.ing-cant').value) || 0;
+
+                if (insumo) {
+                    ingredientesArr.push({ insumo, unidad, cantidad });
+                }
+            });
 
             if (indexOriginal !== '') {
-                menuPlatillos[indexOriginal] = { categoria, nombre, precio, insumos };
+                menuPlatillos[indexOriginal] = { categoria, nombre, precio, ingredientes: ingredientesArr };
             } else {
-                menuPlatillos.push({ categoria, nombre, precio, insumos });
+                menuPlatillos.push({ categoria, nombre, precio, ingredientes: ingredientesArr });
             }
 
             renderMenu();
@@ -1093,7 +1178,15 @@
             document.getElementById('platillo-categoria').value = item.categoria;
             document.getElementById('platillo-nombre').value = item.nombre;
             document.getElementById('platillo-precio').value = item.precio;
-            document.getElementById('platillo-insumos').value = item.insumos || '';
+
+            const tbodyIng = document.getElementById('tabla-ingredientes-receta');
+            tbodyIng.innerHTML = '';
+
+            if (item.ingredientes && item.ingredientes.length > 0) {
+                item.ingredientes.forEach(ing => agregarFilaIngrediente(ing));
+            } else {
+                agregarFilaIngrediente();
+            }
 
             document.getElementById('titulo-modal-platillo').innerHTML = '<i class="fa-solid fa-pen-to-square me-2"></i>Editar Platillo';
             const modal = new bootstrap.Modal(document.getElementById('modalPlatillo'));
@@ -1107,10 +1200,10 @@
             }
         }
 
-        /* --- CAJA CHICA --- */
+        /* --- CAJA CHICA CON SALDO INICIAL EDITABLE --- */
         function renderCajaChica() {
             const fechaFiltro = document.getElementById('caja-filtro-fecha').value;
-            const saldoInicial = 50.00;
+            const saldoInicial = parseFloat(document.getElementById('caja-saldo-inicial-input').value) || 0;
 
             let efectVentas = 0;
             let tarjVentas = 0;
@@ -1159,7 +1252,6 @@
                 });
             }
 
-            document.getElementById('caja-saldo-inicial').innerText = `$${saldoInicial.toFixed(2)}`;
             document.getElementById('caja-ventas-efectivo').innerText = `$${efectVentas.toFixed(2)}`;
             document.getElementById('caja-ventas-tarjeta').innerText = `$${tarjVentas.toFixed(2)}`;
             document.getElementById('caja-ventas-transferencia').innerText = `$${transfVentas.toFixed(2)}`;
@@ -1238,11 +1330,11 @@
             inventarioStock.forEach((item, index) => {
                 tbody.innerHTML += `
                     <tr>
-                        <td class="fw-bold text-warning">${item.nombre}</td>
+                        <td class="fw-bold text-warning fs-6">${item.nombre}</td>
                         <td><span class="badge bg-secondary">${item.categoria}</span></td>
                         <td class="text-center"><span class="badge bg-warning text-dark fs-6">${item.cantidad}</span></td>
                         <td class="text-center text-secondary">${item.unidad}</td>
-                        <td class="text-end fw-bold text-warning">$${item.ultimoPrecio.toFixed(2)}</td>
+                        <td class="text-end fw-bold text-warning fs-6">$${item.ultimoPrecio.toFixed(2)}</td>
                         <td class="text-center">
                             <button class="btn btn-sm btn-outline-warning me-1" onclick="editarInsumo(${index})"><i class="fa-solid fa-pen"></i></button>
                             <button class="btn btn-sm btn-outline-danger" onclick="eliminarInsumo(${index})"><i class="fa-solid fa-trash"></i></button>
