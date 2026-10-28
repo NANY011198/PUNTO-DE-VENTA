@@ -9,8 +9,7 @@ app = Flask(__name__)
 DATABASE_URL = "postgresql://postgres:ERIKa%2301020304DANy%2301@db.robhchusikbljnowrqmr.supabase.co:5432/postgres"
 
 def get_db_connection():
-    conn = psycopg2.connect(DATABASE_URL, cursor_factory=RealDictCursor)
-    return conn
+    return psycopg2.connect(DATABASE_URL, cursor_factory=RealDictCursor)
 
 def init_db():
     try:
@@ -33,7 +32,8 @@ def init_db():
                 id SERIAL PRIMARY KEY,
                 categoria VARCHAR(100) NOT NULL,
                 nombre VARCHAR(255) UNIQUE NOT NULL,
-                precio NUMERIC NOT NULL
+                precio NUMERIC NOT NULL,
+                receta TEXT DEFAULT ''
             );
         ''')
 
@@ -67,25 +67,10 @@ def init_db():
             );
         ''')
 
-        # Insertar menú base inicial si está vacío
-        cursor.execute("SELECT COUNT(*) FROM menu;")
-        if cursor.fetchone()['count'] == 0:
-            cursor.execute("INSERT INTO menu (categoria, nombre, precio) VALUES ('Pizzas', 'Pizza Pepperoni Grande', 8.99) ON CONFLICT DO NOTHING;")
-            cursor.execute("INSERT INTO menu (categoria, nombre, precio) VALUES ('Pizzas', 'Pizza Suprema Grande', 10.99) ON CONFLICT DO NOTHING;")
-            cursor.execute("INSERT INTO menu (categoria, nombre, precio) VALUES ('Entradas', 'Papas Fritas', 3.50) ON CONFLICT DO NOTHING;")
-            cursor.execute("INSERT INTO menu (categoria, nombre, precio) VALUES ('Bebidas', 'Soda 1.25L', 2.00) ON CONFLICT DO NOTHING;")
-
-        # Insertar inventario base inicial si está vacío
-        cursor.execute("SELECT COUNT(*) FROM inventario;")
-        if cursor.fetchone()['count'] == 0:
-            cursor.execute("INSERT INTO inventario (nombre, unidad, categoria, cantidad, ultimo_precio) VALUES ('Queso Mozzarella', 'Bloque / Kg', 'Lácteos / Quesos', 25, 0.75) ON CONFLICT DO NOTHING;")
-            cursor.execute("INSERT INTO inventario (nombre, unidad, categoria, cantidad, ultimo_precio) VALUES ('Harina de Trigo Especial', 'Saco 25kg', 'Harinas / Masas', 10, 18.50) ON CONFLICT DO NOTHING;")
-            cursor.execute("INSERT INTO inventario (nombre, unidad, categoria, cantidad, ultimo_precio) VALUES ('Pepperoni Rebanado', 'Caja / Paquete', 'Embutidos / Carnes', 8, 12.00) ON CONFLICT DO NOTHING;")
-
         conn.commit()
         cursor.close()
         conn.close()
-        print("Base de datos de Supabase inicializada correctamente.")
+        print("Base de datos de Supabase verificada/inicializada correctamente.")
     except Exception as e:
         print("Error al inicializar la base de datos:", e)
 
@@ -95,25 +80,116 @@ init_db()
 def index():
     return render_template('index.html')
 
+# --- API INVENTARIO ---
+@app.route('/api/inventario', methods=['GET', 'POST', 'DELETE'])
+def handle_inventario():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    if request.method == 'POST':
+        data = request.json
+        cursor.execute('''
+            INSERT INTO inventario (nombre, unidad, categoria, cantidad, ultimo_precio)
+            VALUES (%s, %s, %s, %s, %s)
+            ON CONFLICT (nombre) DO UPDATE 
+            SET unidad = EXCLUDED.unidad,
+                categoria = EXCLUDED.categoria,
+                cantidad = EXCLUDED.cantidad,
+                ultimo_precio = EXCLUDED.ultimo_precio;
+        ''', (data['nombre'], data['unidad'], data['categoria'], data['cantidad'], data.get('ultimo_precio', 0)))
+        conn.commit()
+        cursor.close()
+        conn.close()
+        return jsonify({"status": "ok"})
+    elif request.method == 'DELETE':
+        nombre = request.args.get('nombre')
+        cursor.execute("DELETE FROM inventario WHERE nombre = %s;", (nombre,))
+        conn.commit()
+        cursor.close()
+        conn.close()
+        return jsonify({"status": "deleted"})
+    else:
+        cursor.execute("SELECT * FROM inventario ORDER BY id ASC;")
+        items = cursor.fetchall()
+        cursor.close()
+        conn.close()
+        return jsonify(items)
+
+# --- API MENU ---
+@app.route('/api/menu', methods=['GET', 'POST', 'DELETE'])
+def handle_menu():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    if request.method == 'POST':
+        data = request.json
+        receta_str = str(data.get('receta', ''))
+        cursor.execute('''
+            INSERT INTO menu (categoria, nombre, precio, receta)
+            VALUES (%s, %s, %s, %s)
+            ON CONFLICT (nombre) DO UPDATE 
+            SET categoria = EXCLUDED.categoria,
+                precio = EXCLUDED.precio,
+                receta = EXCLUDED.receta;
+        ''', (data['categoria'], data['nombre'], data['precio'], receta_str))
+        conn.commit()
+        cursor.close()
+        conn.close()
+        return jsonify({"status": "ok"})
+    elif request.method == 'DELETE':
+        nombre = request.args.get('nombre')
+        cursor.execute("DELETE FROM menu WHERE nombre = %s;", (nombre,))
+        conn.commit()
+        cursor.close()
+        conn.close()
+        return jsonify({"status": "deleted"})
+    else:
+        cursor.execute("SELECT * FROM menu ORDER BY id ASC;")
+        items = cursor.fetchall()
+        cursor.close()
+        conn.close()
+        return jsonify(items)
+
+# --- API VENTAS & DESCUENTO DE STOCK ---
 @app.route('/api/ventas', methods=['GET', 'POST'])
 def handle_ventas():
     conn = get_db_connection()
     cursor = conn.cursor()
     if request.method == 'POST':
         data = request.json
+        # 1. Registrar Venta
         cursor.execute("INSERT INTO ventas (codigo_venta, fecha, hora, metodo, monto) VALUES (%s, %s, %s, %s, %s)",
                        (data['id'], data['fecha'], data['hora'], data['metodo'], data['monto']))
+        
+        # 2. Descontar Stock si se envian los items vendidos
+        items = data.get('items', [])
+        for item in items:
+            # Obtener la receta del platillo
+            cursor.execute("SELECT receta FROM menu WHERE nombre = %s;", (item['nombre'],))
+            row = cursor.fetchone()
+            if row and row['receta']:
+                # Ejemplo de formato receta en texto: "Queso Mozzarella (1), Harina (1)"
+                partes = row['receta'].split(',')
+                for p in partes:
+                    if '(' in p and ')' in p:
+                        insumo_nom = p.split('(')[0].strip()
+                        cant_str = p.split('(')[1].replace(')', '').strip()
+                        try:
+                            cant_insumo = float(cant_str.split()[0]) * float(item['cantidad'])
+                            cursor.execute("UPDATE inventario SET cantidad = GREATEST(0, cantidad - %s) WHERE nombre = %s;", (cant_insumo, insumo_nom))
+                        except Exception:
+                            pass
+
         conn.commit()
         cursor.close()
         conn.close()
         return jsonify({"status": "ok"})
     else:
-        cursor.execute("SELECT * FROM ventas;")
+        cursor.execute("SELECT * FROM ventas ORDER BY id DESC;")
         ventas = cursor.fetchall()
         cursor.close()
         conn.close()
         return jsonify(ventas)
 
+# --- API GASTOS ---
 @app.route('/api/gastos', methods=['GET', 'POST'])
 def handle_gastos():
     conn = get_db_connection()
@@ -127,12 +203,13 @@ def handle_gastos():
         conn.close()
         return jsonify({"status": "ok"})
     else:
-        cursor.execute("SELECT * FROM gastos;")
+        cursor.execute("SELECT * FROM gastos ORDER BY id DESC;")
         gastos = cursor.fetchall()
         cursor.close()
         conn.close()
         return jsonify(gastos)
 
+# --- API COMPRAS ---
 @app.route('/api/compras', methods=['GET', 'POST'])
 def handle_compras():
     conn = get_db_connection()
@@ -146,7 +223,7 @@ def handle_compras():
         conn.close()
         return jsonify({"status": "ok"})
     else:
-        cursor.execute("SELECT * FROM compras;")
+        cursor.execute("SELECT * FROM compras ORDER BY id DESC;")
         compras = cursor.fetchall()
         cursor.close()
         conn.close()
