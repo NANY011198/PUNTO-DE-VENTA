@@ -20,7 +20,6 @@
             min-height: 100vh;
         }
 
-        /* LOGIN SCREEN */
         #login-screen {
             display: flex;
             align-items: center;
@@ -64,7 +63,6 @@
             background-color: #e0a800;
         }
 
-        /* MAIN SYSTEM */
         #app-system {
             display: none;
         }
@@ -120,7 +118,6 @@
             background-color: #e0a800;
         }
 
-        /* REGLA CSS DE TABLAS: ALTA LEGIBILIDAD EN FONDOS CLAROS/BLANCOS Y OSCUROS */
         .table-dark-custom {
             background-color: #ffffff !important;
             color: #111111 !important;
@@ -157,7 +154,6 @@
 </head>
 <body>
 
-    <!-- PANTALLA DE LOGIN -->
     <div id="login-screen">
         <div class="login-card text-center">
             <div class="mb-2">
@@ -188,7 +184,6 @@
         </div>
     </div>
 
-    <!-- SISTEMA ERP/POS -->
     <div id="app-system">
         <nav class="navbar navbar-expand-lg navbar-dark navbar-custom px-4 py-2">
             <a class="navbar-brand text-warning fw-bold" href="javascript:void(0)" onclick="showSection('pos')">
@@ -201,7 +196,6 @@
         </nav>
 
         <div class="container-fluid mt-3 px-4">
-            <!-- NAVEGACIÓN -->
             <div class="row mb-3 g-2">
                 <div class="col">
                     <div class="card card-custom module-card text-center p-2 active" id="btn-pos" onclick="showSection('pos')">
@@ -325,7 +319,7 @@
                             <small class="text-secondary d-block mb-1">Saldo Inicial</small>
                             <div class="input-group input-group-sm">
                                 <span class="input-group-text bg-dark border-secondary text-warning">$</span>
-                                <input type="number" step="0.01" id="caja-saldo-inicial-input" class="form-control bg-dark text-warning fw-bold border-secondary text-center" value="50.00" oninput="renderCajaChica()">
+                                <input type="number" step="0.01" id="caja-saldo-inicial-input" class="form-control bg-dark text-warning fw-bold border-secondary text-center" value="50.00" oninput="guardarSaldoInicial(); renderCajaChica();">
                             </div>
                         </div>
                     </div>
@@ -486,7 +480,6 @@
                 <div class="card card-custom p-3">
                     <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
                         <h6 class="text-warning mb-0 fw-bold"><i class="fa-solid fa-list me-2"></i>Historial de Facturas de Compra</h6>
-                        
                         <div class="d-flex gap-2 align-items-center flex-wrap">
                             <div>
                                 <input type="date" id="filtro-fecha" class="form-control form-control-sm bg-dark text-light border-secondary" onchange="filtrarCompras()" title="Filtrar por Fecha">
@@ -559,7 +552,7 @@
         </div>
     </div>
 
-    <!-- MODAL: PLATILLO / RECETA -->
+    <!-- MODALES -->
     <div class="modal fade" id="modalPlatillo" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-lg">
             <div class="modal-content modal-content-dark">
@@ -590,16 +583,13 @@
                                 <input type="number" step="0.01" min="0" id="platillo-precio" class="form-control bg-dark text-light border-secondary" placeholder="8.99" required>
                             </div>
                         </div>
-
                         <hr class="border-secondary">
-
                         <div class="d-flex justify-content-between align-items-center mb-2">
                             <label class="form-label text-warning small fw-bold mb-0"><i class="fa-solid fa-boxes-stacked me-1"></i>Insumos / Ingredientes de la Receta</label>
                             <button type="button" class="btn btn-sm btn-outline-warning" onclick="agregarFilaIngrediente()">
                                 <i class="fa-solid fa-plus me-1"></i> Agregar Ingrediente
                             </button>
                         </div>
-
                         <div class="table-responsive mb-3">
                             <table class="table table-dark-custom align-middle">
                                 <thead>
@@ -624,7 +614,6 @@
         </div>
     </div>
 
-    <!-- MODAL: REGISTRAR GASTO CAJA CHICA -->
     <div class="modal fade" id="modalGasto" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content modal-content-dark">
@@ -662,7 +651,6 @@
         </div>
     </div>
 
-    <!-- MODAL: INSUMO INVENTARIO -->
     <div class="modal fade" id="modalInsumo" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content modal-content-dark">
@@ -721,7 +709,6 @@
         </div>
     </div>
 
-    <!-- MODAL: PROVEEDORES -->
     <div class="modal fade" id="modalProveedores" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-lg">
             <div class="modal-content modal-content-dark">
@@ -736,7 +723,6 @@
                             <i class="fa-solid fa-plus me-1"></i> Agregar Nuevo Proveedor
                         </button>
                     </div>
-
                     <div id="contenedor-form-proveedor" class="p-3 bg-dark rounded border border-warning mb-3 d-none">
                         <h6 class="text-warning fw-bold mb-3" id="titulo-form-proveedor">Nuevo Proveedor</h6>
                         <form id="form-proveedor" onsubmit="guardarProveedor(event)">
@@ -761,7 +747,6 @@
                             </div>
                         </form>
                     </div>
-
                     <div class="table-responsive">
                         <table class="table table-dark-custom align-middle mb-0">
                             <thead>
@@ -781,7 +766,6 @@
         </div>
     </div>
 
-    <!-- MODAL: REGISTRAR COMPRA -->
     <div class="modal fade" id="modalCompra" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-lg">
             <div class="modal-content modal-content-dark">
@@ -807,19 +791,15 @@
                                 <input type="text" id="compra-factura" class="form-control bg-dark text-light border-secondary" placeholder="Ej: F-10492" required>
                             </div>
                         </div>
-
                         <hr class="border-secondary">
-                        
                         <div class="d-flex justify-content-between align-items-center mb-2">
                             <label class="form-label text-warning small fw-bold mb-0">Ítems / Productos Comprados</label>
                             <button type="button" class="btn btn-sm btn-outline-warning" onclick="agregarFilaCompra()">
                                 <i class="fa-solid fa-plus me-1"></i> Agregar Producto
                             </button>
                         </div>
-
                         <datalist id="lista-productos-sugeridos">
                         </datalist>
-
                         <div class="table-responsive mb-3">
                             <table class="table table-dark-custom align-middle">
                                 <thead>
@@ -835,7 +815,6 @@
                                 </tbody>
                             </table>
                         </div>
-
                         <div class="d-flex justify-content-end align-items-center bg-dark p-3 rounded border border-secondary">
                             <span class="fs-5 me-3 text-secondary">TOTAL COMPRA:</span>
                             <span class="fs-3 fw-bold text-warning" id="compra-total-gral">$0.00</span>
@@ -893,9 +872,9 @@
             { categoria: 'Bebidas', nombre: 'Soda 1.25L', precio: 2.00, ingredientes: [] }
         ];
 
-        let ventasHistorial = [];
-        let gastosHistorial = [];
-        let comprasHistorial = [];
+        let ventasHistorial = JSON.parse(localStorage.getItem('charlies_ventas')) || [];
+        let gastosHistorial = JSON.parse(localStorage.getItem('charlies_gastos')) || [];
+        let comprasHistorial = JSON.parse(localStorage.getItem('charlies_compras')) || [];
 
         let cart = [];
         let filaItemCount = 0;
@@ -913,6 +892,11 @@
             const elFechaGasto = document.getElementById('gasto-fecha');
             if(elFechaGasto) elFechaGasto.value = hoy;
 
+            const saldoGuardado = localStorage.getItem('charlies_saldo_inicial');
+            if(saldoGuardado) {
+                document.getElementById('caja-saldo-inicial-input').value = saldoGuardado;
+            }
+
             actualizarSelectProveedores();
             agregarFilaCompra();
             renderInventario();
@@ -921,6 +905,11 @@
             renderCajaChica();
             renderReportes();
         });
+
+        function guardarSaldoInicial() {
+            const val = document.getElementById('caja-saldo-inicial-input').value;
+            localStorage.setItem('charlies_saldo_inicial', val);
+        }
 
         function showSection(sectionId) {
             document.querySelectorAll('.app-section').forEach(sec => sec.classList.remove('active'));
@@ -936,7 +925,6 @@
             if (sectionId === 'reportes') renderReportes();
         }
 
-        /* --- VENTAS / POS --- */
         function renderPosGrid(catFiltro) {
             const grid = document.getElementById('grid-pos-productos');
             grid.innerHTML = '';
@@ -1041,13 +1029,22 @@
             let totalVenta = 0;
             cart.forEach(i => totalVenta += (i.precio * i.cantidad));
 
-            ventasHistorial.push({
+            const objetoVenta = {
                 fecha: hoy,
                 hora: hora,
                 id: 'VEN-' + Math.floor(1000 + Math.random() * 9000),
                 metodo: metodo,
                 monto: totalVenta
-            });
+            };
+
+            ventasHistorial.push(objetoVenta);
+            localStorage.setItem('charlies_ventas', JSON.stringify(ventasHistorial));
+
+            fetch('/api/ventas', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(objetoVenta)
+            }).catch(e => console.log('Sincronizando LocalStorage.'));
 
             alert(`¡Cobro registrado con éxito!\nMétodo: ${metodo}\nTotal: $${totalVenta.toFixed(2)}`);
             cart = [];
@@ -1055,7 +1052,6 @@
             renderCajaChica();
         }
 
-        /* --- MENÚ & RECETAS --- */
         function renderMenu() {
             const tbody = document.getElementById('tabla-menu-body');
             tbody.innerHTML = '';
@@ -1204,7 +1200,6 @@
             }
         }
 
-        /* --- CAJA CHICA --- */
         function renderCajaChica() {
             const fechaFiltro = document.getElementById('caja-filtro-fecha').value;
             const saldoInicial = parseFloat(document.getElementById('caja-saldo-inicial-input').value) || 0;
@@ -1272,7 +1267,15 @@
             const monto = parseFloat(document.getElementById('gasto-monto').value) || 0;
             const cantStock = parseFloat(document.getElementById('gasto-cant-stock').value) || 0;
 
-            gastosHistorial.push({ fecha, concepto, monto });
+            const objetoGasto = { fecha, concepto, monto };
+            gastosHistorial.push(objetoGasto);
+            localStorage.setItem('charlies_gastos', JSON.stringify(gastosHistorial));
+
+            fetch('/api/gastos', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(objetoGasto)
+            }).catch(e => console.log('Sincronizando LocalStorage.'));
 
             if (cantStock > 0 && concepto) {
                 let existente = inventarioStock.find(i => i.nombre.toLowerCase() === concepto.toLowerCase());
@@ -1300,7 +1303,6 @@
             alert('¡Gasto registrado con éxito!');
         }
 
-        /* --- REPORTES --- */
         function renderReportes() {
             let totVentas = 0;
             ventasHistorial.forEach(v => totVentas += v.monto);
@@ -1319,7 +1321,6 @@
             document.getElementById('rep-utilidad').innerText = `$${utilidad.toFixed(2)}`;
         }
 
-        /* --- INVENTARIO Y PROVEEDORES --- */
         function renderInventario() {
             const tbody = document.getElementById('tabla-inventario-body');
             if (!tbody) return;
@@ -1587,7 +1588,15 @@
                 }
             });
 
-            comprasHistorial.push({ fecha, factura, proveedor, totalGeneral });
+            const objetoCompra = { fecha, factura, proveedor, totalGeneral };
+            comprasHistorial.push(objetoCompra);
+            localStorage.setItem('charlies_compras', JSON.stringify(comprasHistorial));
+
+            fetch('/api/compras', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(objetoCompra)
+            }).catch(e => console.log('Sincronizando LocalStorage.'));
 
             renderTablaCompras(comprasHistorial);
             renderInventario();

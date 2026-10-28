@@ -4,11 +4,15 @@ from flask import Flask, render_template, request, jsonify
 app = Flask(__name__)
 DB_NAME = "charlies_pizza.db"
 
-def init_db():
+def get_db_connection():
     conn = sqlite3.connect(DB_NAME)
+    conn.row_factory = sqlite3.Row
+    return conn
+
+def init_db():
+    conn = get_db_connection()
     cursor = conn.cursor()
     
-    # Tabla de Inventario
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS inventario (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -20,7 +24,6 @@ def init_db():
         )
     ''')
     
-    # Tabla de Menú / Platillos
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS menu (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -30,19 +33,6 @@ def init_db():
         )
     ''')
 
-    # Tabla de Recetas (Ingredientes por Platillo)
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS recetas (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            menu_id INTEGER NOT NULL,
-            insumo_nombre TEXT NOT NULL,
-            unidad TEXT NOT NULL,
-            cantidad REAL NOT NULL,
-            FOREIGN KEY(menu_id) REFERENCES menu(id) ON DELETE CASCADE
-        )
-    ''')
-
-    # Tabla de Ventas
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS ventas (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -54,7 +44,6 @@ def init_db():
         )
     ''')
 
-    # Tabla de Gastos de Caja Chica
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS gastos (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -64,7 +53,6 @@ def init_db():
         )
     ''')
 
-    # Tabla de Compras
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS compras (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -75,17 +63,6 @@ def init_db():
         )
     ''')
 
-    # Tabla de Proveedores
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS proveedores (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            nombre TEXT UNIQUE NOT NULL,
-            telefono TEXT NOT NULL,
-            categoria TEXT
-        )
-    ''')
-
-    # Insertar datos base por defecto si la base está vacía
     cursor.execute("SELECT COUNT(*) FROM menu")
     if cursor.fetchone()[0] == 0:
         cursor.execute("INSERT OR IGNORE INTO menu (categoria, nombre, precio) VALUES ('Pizzas', 'Pizza Pepperoni Grande', 8.99)")
@@ -107,6 +84,54 @@ init_db()
 @app.route('/')
 def index():
     return render_template('index.html')
+
+@app.route('/api/ventas', methods=['GET', 'POST'])
+def handle_ventas():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    if request.method == 'POST':
+        data = request.json
+        cursor.execute("INSERT INTO ventas (codigo_venta, fecha, hora, metodo, monto) VALUES (?, ?, ?, ?, ?)",
+                       (data['id'], data['fecha'], data['hora'], data['metodo'], data['monto']))
+        conn.commit()
+        conn.close()
+        return jsonify({"status": "ok"})
+    else:
+        ventas = cursor.execute("SELECT * FROM ventas").fetchall()
+        conn.close()
+        return jsonify([dict(v) for v in ventas])
+
+@app.route('/api/gastos', methods=['GET', 'POST'])
+def handle_gastos():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    if request.method == 'POST':
+        data = request.json
+        cursor.execute("INSERT INTO gastos (fecha, concepto, monto) VALUES (?, ?, ?)",
+                       (data['fecha'], data['concepto'], data['monto']))
+        conn.commit()
+        conn.close()
+        return jsonify({"status": "ok"})
+    else:
+        gastos = cursor.execute("SELECT * FROM gastos").fetchall()
+        conn.close()
+        return jsonify([dict(g) for g in gastos])
+
+@app.route('/api/compras', methods=['GET', 'POST'])
+def handle_compras():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    if request.method == 'POST':
+        data = request.json
+        cursor.execute("INSERT INTO compras (fecha, factura, proveedor, total) VALUES (?, ?, ?, ?)",
+                       (data['fecha'], data['factura'], data['proveedor'], data['totalGeneral']))
+        conn.commit()
+        conn.close()
+        return jsonify({"status": "ok"})
+    else:
+        compras = cursor.execute("SELECT * FROM compras").fetchall()
+        conn.close()
+        return jsonify([dict(c) for c in compras])
 
 if __name__ == '__main__':
     app.run(debug=True)
