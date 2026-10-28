@@ -468,9 +468,6 @@
                         <small class="text-secondary">Registro de facturas, insumos entrantes y proveedores.</small>
                     </div>
                     <div>
-                        <button class="btn btn-outline-warning me-2 fw-bold" data-bs-toggle="modal" data-bs-target="#modalProveedores" onclick="renderTablaProveedores()">
-                            <i class="fa-solid fa-users me-1"></i> Proveedores
-                        </button>
                         <button class="btn btn-warning fw-bold" data-bs-toggle="modal" data-bs-target="#modalCompra">
                             <i class="fa-solid fa-file-invoice-dollar me-1"></i> Registrar Compra
                         </button>
@@ -478,21 +475,6 @@
                 </div>
 
                 <div class="card card-custom p-3">
-                    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-                        <h6 class="text-warning mb-0 fw-bold"><i class="fa-solid fa-list me-2"></i>Historial de Facturas de Compra</h6>
-                        <div class="d-flex gap-2 align-items-center flex-wrap">
-                            <div>
-                                <input type="date" id="filtro-fecha" class="form-control form-control-sm bg-dark text-light border-secondary" onchange="filtrarCompras()" title="Filtrar por Fecha">
-                            </div>
-                            <div>
-                                <input type="text" id="filtro-proveedor" class="form-control form-control-sm bg-dark text-light border-secondary" oninput="filtrarCompras()" placeholder="Filtrar por proveedor...">
-                            </div>
-                            <button class="btn btn-sm btn-outline-secondary text-warning" onclick="limpiarFiltrosCompras()" title="Limpiar Filtros">
-                                <i class="fa-solid fa-filter-circle-xmark"></i> Limpiar
-                            </button>
-                        </div>
-                    </div>
-
                     <div class="table-responsive">
                         <table class="table table-dark-custom align-middle mb-0">
                             <thead>
@@ -561,7 +543,6 @@
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <form id="form-insumo" onsubmit="guardarInsumo(event)">
-                    <input type="hidden" id="insumo-nombre-original">
                     <div class="modal-body">
                         <div class="mb-3">
                             <label class="form-label text-warning small fw-bold">Nombre del Insumo / Producto *</label>
@@ -630,11 +611,10 @@
         <div class="modal-dialog modal-lg">
             <div class="modal-content modal-content-dark">
                 <div class="modal-header border-secondary">
-                    <h5 class="modal-title text-warning fw-bold" id="titulo-modal-platillo"><i class="fa-solid fa-utensils me-2"></i>Nuevo Platillo / Receta</h5>
+                    <h5 class="modal-title text-warning fw-bold"><i class="fa-solid fa-utensils me-2"></i>Nuevo Platillo / Receta</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <form id="form-platillo" onsubmit="guardarPlatillo(event)">
-                    <input type="hidden" id="platillo-nombre-original">
                     <div class="modal-body">
                         <div class="row g-2 mb-3">
                             <div class="col-md-4">
@@ -714,9 +694,41 @@
         </div>
     </div>
 
+    <!-- MODAL REGISTRAR COMPRA -->
+    <div class="modal fade" id="modalCompra" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content modal-content-dark">
+                <div class="modal-header border-secondary">
+                    <h5 class="modal-title text-warning fw-bold"><i class="fa-solid fa-cart-shopping me-2"></i>Registrar Compra</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <form id="form-compra" onsubmit="guardarCompra(event)">
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label text-warning small fw-bold">N° Factura / Comprobante *</label>
+                            <input type="text" id="compra-factura" class="form-control bg-dark text-light border-secondary" placeholder="F-00123" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label text-warning small fw-bold">Proveedor *</label>
+                            <input type="text" id="compra-proveedor" class="form-control bg-dark text-light border-secondary" placeholder="Distribuidora S.A." required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label text-warning small fw-bold">Total General ($) *</label>
+                            <input type="number" step="0.01" min="0.01" id="compra-total" class="form-control bg-dark text-light border-secondary" placeholder="150.00" required>
+                        </div>
+                    </div>
+                    <div class="modal-footer border-secondary">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-warning fw-bold">Guardar Compra</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // ESTADO GLOBAL DE LA APLICACIÓN
+        // ESTADO GLOBAL
         let inventario = [];
         let menu = [];
         let ventas = [];
@@ -725,7 +737,6 @@
         let carrito = [];
         let categoriaPosActual = 'Todas';
 
-        // INICIALIZACIÓN Y FECHAS
         document.addEventListener('DOMContentLoaded', () => {
             const hoy = new Date().toISOString().split('T')[0];
             document.getElementById('caja-filtro-fecha').value = hoy;
@@ -734,7 +745,6 @@
             }
         });
 
-        // LOGIN / LOGOUT
         function handleLogin(e) {
             e.preventDefault();
             const u = document.getElementById('login-user').value.trim();
@@ -758,7 +768,6 @@
             cargarDatosDesdeServidor();
         }
 
-        // NAVEGACIÓN ENTRE MÓDULOS
         function showSection(sec) {
             document.querySelectorAll('.app-section').forEach(el => el.classList.remove('active'));
             document.querySelectorAll('.module-card').forEach(el => el.classList.remove('active'));
@@ -768,9 +777,10 @@
 
             if (sec === 'caja') renderCajaChica();
             if (sec === 'reportes') renderReportes();
+            if (sec === 'compras') renderTablaCompras();
         }
 
-        // --- CARGAR DATOS DESDE SUPABASE ---
+        // CARGA GENERAL DESDE SERVIDOR
         async function cargarDatosDesdeServidor() {
             try {
                 const resInv = await fetch('/api/inventario');
@@ -793,14 +803,17 @@
                 if (resGastos.ok) gastos = await resGastos.json();
 
                 const resCompras = await fetch('/api/compras');
-                if (resCompras.ok) compras = await resCompras.json();
+                if (resCompras.ok) {
+                    compras = await resCompras.json();
+                    renderTablaCompras();
+                }
 
             } catch (err) {
-                console.error("Error conectando con Supabase:", err);
+                console.error("Error al cargar desde el servidor:", err);
             }
         }
 
-        // --- GESTIÓN DE INVENTARIO ---
+        // INVENTARIO
         function actualizarTablaInventario() {
             const tbody = document.getElementById('tabla-inventario-body');
             tbody.innerHTML = '';
@@ -826,37 +839,56 @@
 
         function mostrarModalInsumo() {
             document.getElementById('form-insumo').reset();
-            const modal = new bootstrap.Modal(document.getElementById('modalInsumo'));
+            const modalEl = document.getElementById('modalInsumo');
+            const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
             modal.show();
         }
 
         async function guardarInsumo(e) {
-            e.preventDefault();
+            if (e) e.preventDefault();
+            
             const nombre = document.getElementById('insumo-nombre').value.trim();
             const unidad = document.getElementById('insumo-unidad').value;
             const categoria = document.getElementById('insumo-categoria').value;
             const cantidad = parseFloat(document.getElementById('insumo-cantidad').value) || 0;
             const precio = parseFloat(document.getElementById('insumo-precio').value) || 0;
 
+            if (!nombre || !unidad || !categoria) {
+                alert("Por favor completa todos los campos requeridos (*)");
+                return;
+            }
+
             const nuevo = { nombre, unidad, categoria, cantidad, ultimo_precio: precio };
 
-            await fetch('/api/inventario', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(nuevo)
-            });
+            try {
+                const res = await fetch('/api/inventario', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(nuevo)
+                });
 
-            bootstrap.Modal.getInstance(document.getElementById('modalInsumo')).hide();
-            cargarDatosDesdeServidor();
+                if (res.ok) {
+                    const modalEl = document.getElementById('modalInsumo');
+                    const modalObj = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+                    modalObj.hide();
+                    document.getElementById('form-insumo').reset();
+                    await cargarDatosDesdeServidor();
+                } else {
+                    alert("Ocurrió un error al guardar en la base de datos.");
+                }
+            } catch (err) {
+                console.error("Error al guardar insumo:", err);
+                alert("Error de conexión al guardar el insumo.");
+            }
         }
 
         async function eliminarInsumo(nombre) {
-            if (!confirm(`¿Eliminar insumo "${nombre}"?`)) return;
+            if (!confirm(`¿Deseas eliminar el insumo "${nombre}"?`)) return;
             await fetch(`/api/inventario?nombre=${encodeURIComponent(nombre)}`, { method: 'DELETE' });
-            cargarDatosDesdeServidor();
+            await cargarDatosDesdeServidor();
         }
 
-        // --- GESTIÓN DE MENÚ Y RECETAS ---
+        // MENÚ & RECETAS
         function actualizarTablaMenu() {
             const tbody = document.getElementById('tabla-menu-body');
             tbody.innerHTML = '';
@@ -883,7 +915,8 @@
             document.getElementById('form-platillo').reset();
             document.getElementById('tabla-ingredientes-receta').innerHTML = '';
             agregarFilaIngrediente();
-            const modal = new bootstrap.Modal(document.getElementById('modalPlatillo'));
+            const modalEl = document.getElementById('modalPlatillo');
+            const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
             modal.show();
         }
 
@@ -911,7 +944,7 @@
         }
 
         async function guardarPlatillo(e) {
-            e.preventDefault();
+            if (e) e.preventDefault();
             const categoria = document.getElementById('platillo-categoria').value;
             const nombre = document.getElementById('platillo-nombre').value.trim();
             const precio = parseFloat(document.getElementById('platillo-precio').value) || 0;
@@ -926,23 +959,27 @@
 
             const nuevo = { categoria, nombre, precio, receta: recetaArr.join(', ') };
 
-            await fetch('/api/menu', {
+            const res = await fetch('/api/menu', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(nuevo)
             });
 
-            bootstrap.Modal.getInstance(document.getElementById('modalPlatillo')).hide();
-            cargarDatosDesdeServidor();
+            if (res.ok) {
+                const modalEl = document.getElementById('modalPlatillo');
+                const modalObj = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+                modalObj.hide();
+                await cargarDatosDesdeServidor();
+            }
         }
 
         async function eliminarPlatillo(nombre) {
             if (!confirm(`¿Eliminar platillo "${nombre}"?`)) return;
             await fetch(`/api/menu?nombre=${encodeURIComponent(nombre)}`, { method: 'DELETE' });
-            cargarDatosDesdeServidor();
+            await cargarDatosDesdeServidor();
         }
 
-        // --- VENTAS / POS ---
+        // VENTAS / POS
         function renderizarPOS() {
             const grid = document.getElementById('grid-pos-productos');
             grid.innerHTML = '';
@@ -1058,10 +1095,10 @@
             alert(`¡Venta realizada con éxito!\nTotal: $${total.toFixed(2)}\nMétodo: ${metodo}`);
             carrito = [];
             renderizarCarrito();
-            cargarDatosDesdeServidor();
+            await cargarDatosDesdeServidor();
         }
 
-        // --- CAJA CHICA ---
+        // CAJA CHICA
         function renderCajaChica() {
             const fechaSel = document.getElementById('caja-filtro-fecha').value;
             const ventasDia = ventas.filter(v => v.fecha === fechaSel);
@@ -1084,7 +1121,6 @@
             document.getElementById('caja-total-gastos').innerText = `$${totalGastos.toFixed(2)}`;
             document.getElementById('caja-efectivo-total').innerText = `$${(saldoInicial + efec - totalGastos).toFixed(2)}`;
 
-            // Tablas de Caja
             const tbVentas = document.getElementById('tabla-caja-ventas');
             tbVentas.innerHTML = ventasDia.length === 0 ? '<tr><td colspan="3" class="text-center text-muted">No hay ventas registradas.</td></tr>' :
                 ventasDia.map(v => `<tr><td>${v.hora} (${v.codigo_venta || v.id})</td><td>${v.metodo}</td><td class="text-end fw-bold">$${parseFloat(v.monto).toFixed(2)}</td></tr>`).join('');
@@ -1095,7 +1131,7 @@
         }
 
         async function guardarGasto(e) {
-            e.preventDefault();
+            if (e) e.preventDefault();
             const concepto = document.getElementById('gasto-concepto').value.trim();
             const monto = parseFloat(document.getElementById('gasto-monto').value) || 0;
             const fecha = new Date().toISOString().split('T')[0];
@@ -1106,16 +1142,58 @@
                 body: JSON.stringify({ fecha, concepto, monto })
             });
 
-            bootstrap.Modal.getInstance(document.getElementById('modalGasto')).hide();
+            const modalEl = document.getElementById('modalGasto');
+            const modalObj = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+            modalObj.hide();
             document.getElementById('form-gasto').reset();
-            cargarDatosDesdeServidor();
+            await cargarDatosDesdeServidor();
         }
 
         function guardarSaldoInicial() {
             localStorage.setItem('charlies_saldo_inicial', document.getElementById('caja-saldo-inicial-input').value);
         }
 
-        // --- REPORTES ---
+        // COMPRAS
+        function renderTablaCompras() {
+            const tbody = document.getElementById('tabla-compras-body');
+            tbody.innerHTML = '';
+            if (compras.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-4">No se han registrado compras.</td></tr>';
+                return;
+            }
+            compras.forEach(c => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${c.fecha}</td>
+                    <td class="fw-bold">${c.factura}</td>
+                    <td>${c.proveedor}</td>
+                    <td class="text-end fw-bold text-info">$${parseFloat(c.total).toFixed(2)}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        async function guardarCompra(e) {
+            if (e) e.preventDefault();
+            const factura = document.getElementById('compra-factura').value.trim();
+            const proveedor = document.getElementById('compra-proveedor').value.trim();
+            const totalGeneral = parseFloat(document.getElementById('compra-total').value) || 0;
+            const fecha = new Date().toISOString().split('T')[0];
+
+            await fetch('/api/compras', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ fecha, factura, proveedor, totalGeneral })
+            });
+
+            const modalEl = document.getElementById('modalCompra');
+            const modalObj = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+            modalObj.hide();
+            document.getElementById('form-compra').reset();
+            await cargarDatosDesdeServidor();
+        }
+
+        // REPORTES
         function renderReportes() {
             const totVentas = ventas.reduce((s, v) => s + parseFloat(v.monto), 0);
             const totGastos = gastos.reduce((s, g) => s + parseFloat(g.monto), 0);
